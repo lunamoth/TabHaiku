@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "탭 하이쿠 (Tab Haiku)",
+  "version": "6.5",
+  "description": "BeOS 디자인의 탭 세션 관리자",
+  "permissions": [
+    "tabs",
+    "storage",
+    "tabGroups",
+    "downloads"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "탭 하이쿠"
+  },
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  }
+}
