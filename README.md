@@ -1,4 +1,3 @@
 # TabHaiku
 
-[TabHaiku](https://github.com/lunamoth/TabHaiku/blob/main/250930_TabHaiku.png?raw=true)
-
+![TabHiaku](https://raw.githubusercontent.com/lunamoth/TabHaiku/refs/heads/main/250930_TabHaiku.png)
