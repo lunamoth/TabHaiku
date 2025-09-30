@@ -233,13 +233,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const createTabsInBatches = async (windowId, tabsData, delayMs = 0) => {
     const results = [];
-    for (let i = 0; i < tabsData.length; i += CONSTANTS.TAB_CREATION_BATCH_SIZE) {
-      const batch = tabsData.slice(i, i + CONSTANTS.TAB_CREATION_BATCH_SIZE);
-      if (i > 0 && delayMs > 0) await new Promise(r => setTimeout(r, delayMs));
-      const batchResults = await Promise.allSettled(batch.map(tabData => chrome.tabs.create({ windowId, url: tabData.url, pinned: tabData.pinned, active: false })));
-      results.push(...batchResults.map(r => r.status === 'fulfilled' ? r.value : null));
-      batchResults.forEach((r, idx) => { if (r.status === 'rejected') console.warn(`Failed to create tab: ${batch[idx].url}`, r.reason); });
-      if (i + CONSTANTS.TAB_CREATION_BATCH_SIZE < tabsData.length) await new Promise(r => setTimeout(r, CONSTANTS.TAB_CREATION_DELAY));
+    for (let i = 0; i < tabsData.length; i++) {
+      const tabData = tabsData[i];
+      // 첫 탭을 제외하고, 다음 탭을 열기 전에 지정된 지연시간만큼 대기합니다.
+      if (i > 0 && delayMs > 0) {
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
+      try {
+        // 개별적으로 탭을 생성하고 결과를 수집합니다.
+        const createdTab = await chrome.tabs.create({
+          windowId,
+          url: tabData.url,
+          pinned: tabData.pinned,
+          active: false
+        });
+        results.push(createdTab);
+      } catch (error) {
+        console.warn(`Failed to create tab: ${tabData.url}`, error);
+        // 그룹 정보 매칭을 위해 배열 길이를 유지하도록 null을 추가합니다.
+        results.push(null);
+      }
     }
     return results;
   };
