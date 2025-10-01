@@ -212,11 +212,18 @@
     .session-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     .session-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-width: 0; }
     .session-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .session-name[contenteditable="true"] {
+        background-color: white;
+        color: black;
+        outline: 1px solid var(--beos-blue);
+        padding: 0 2px;
+        margin: -1px -3px; /* To compensate for padding */
+    }
     .session-meta { font-size: 10px; color: #555; }
     .session-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
     .beos-icon-button {
       background: none; border: none; padding: 2px; cursor: pointer;
-      font-size: 16px; /* Emoji button size */
+      font-size: 14px; /* [MODIFIED] Emoji button size 줄임 (16px -> 14px) */
       line-height: 1;
       color: var(--beos-text);
     }
