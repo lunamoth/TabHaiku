@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TabHaiku",
-  "version": "7.15",
+  "version": "7.18",
   "description": "BeOS 디자인의 세션 관리 확장 프로그램",
   "permissions": [
     "tabs",
