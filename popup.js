@@ -8,8 +8,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const CONSTANTS = {
     TOAST_DURATION: 3000,
     DEFAULT_SESSION_PREFIX: '세션',
-    BACKUP_FILENAME_PREFIX: 'tab-haiku-backup-',
-    TAB_CREATION_BATCH_SIZE: 5,
+    // [REVISED] 파일명 생성 로직 변경으로 제거
+    // TAB_CREATION_BATCH_SIZE: 5, // [REVISED] 사용되지 않으므로 제거
     TAB_CREATION_DELAY: 100,
     DANGEROUS_PROTOCOLS: ['javascript:', 'data:', 'file:', 'about:', 'chrome:'],
     CACHE_CAPACITY: 100,
@@ -47,7 +47,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let allSessions = [];
   let toastTimeout;
   let selectedDelay = 0;
-  let selectedRestoreTarget = CONSTANTS.RESTORE_TARGETS.NEW_WINDOW;
+  let selectedRestoreTarget; // [REVISED] 초기화 로직은 initialize 함수로 이동
 
   // --- 6.2 LRU Cache 구현 ---
   class LRUCache {
@@ -95,7 +95,24 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- 4. 유틸리티 함수 ---
-  const formatDate = (timestamp) => new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(timestamp));
+  // [REVISED] 시각 표시를 12시간제 ('오후 5시 7분') 형식으로 변경
+  const formatDate = (timestamp) => {
+    const d = new Date(timestamp);
+    // 날짜 부분은 기존 형식(YYYY. MM. DD.)을 유지합니다.
+    const datePart = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
+    
+    // 시간 부분은 '오후 5시 7분' 형식으로 직접 구성합니다.
+    let hours = d.getHours();
+    const minutes = d.getMinutes();
+    const ampm = hours >= 12 ? '오후' : '오전';
+    
+    hours %= 12;
+    if (hours === 0) hours = 12; // 0시는 12시로 표시
+
+    const timePart = `${ampm} ${hours}시 ${minutes}분`;
+    
+    return `${datePart} ${timePart}`;
+  };
   const showToast = (message, duration = CONSTANTS.TOAST_DURATION) => {
     clearTimeout(toastTimeout);
     toastEl.textContent = message;
@@ -231,7 +248,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderSessions();
   };
 
-  const createTabsInBatches = async (windowId, tabsData, delayMs = 0) => {
+  // [REVISED] 함수 이름 변경
+  const createTabsSequentiallyWithDelay = async (windowId, tabsData, delayMs = 0) => {
     const results = [];
     for (let i = 0; i < tabsData.length; i++) {
       const tabData = tabsData[i];
@@ -270,7 +288,8 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         targetWindowId = (await chrome.windows.getCurrent()).id;
       }
-      const createdTabs = await createTabsInBatches(targetWindowId, session.tabs, selectedDelay * 1000);
+      // [REVISED] 변경된 함수 이름 사용
+      const createdTabs = await createTabsSequentiallyWithDelay(targetWindowId, session.tabs, selectedDelay * 1000);
       const validCreatedTabs = createdTabs.filter(Boolean);
       if (validCreatedTabs.length === 0) {
         showToast('⚠️ 탭 복원에 실패했습니다.');
@@ -310,7 +329,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (confirm(`'${newName}' 세션을 현재 모든 탭으로 덮어씁니까?\n(이름을 변경하려면 입력창을 수정하세요)`)) {
       await handleSaveSession(sessionId);
     } else {
-      sessionInput.value = '';
+      sessionInput.value = ''; // [FIXED] 취소 시 입력창 초기화
     }
   };
 
@@ -330,7 +349,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const dataStr = JSON.stringify(allSessions, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    chrome.downloads.download({ url, filename: `${CONSTANTS.BACKUP_FILENAME_PREFIX}${new Date().toISOString().slice(0, 10)}.json` });
+
+    // [REVISED] 파일명 형식을 'YYMMDD_TabHaiku_Backup.json'으로 변경
+    const now = new Date();
+    const year = now.getFullYear().toString().slice(-2);
+    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const day = now.getDate().toString().padStart(2, '0');
+    const filename = `${year}${month}${day}_TabHaiku_Backup.json`;
+
+    chrome.downloads.download({ url, filename });
     showToast('📤 모든 세션을 내보냈습니다.');
   };
 
@@ -349,7 +376,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const valid = imported.filter(s => isValidSession(s) || console.warn('Invalid session skipped:', s));
         if (valid.length === 0) throw new Error("No valid sessions");
         const existingIds = new Set(allSessions.map(s => s.id));
-        valid.forEach(s => { if (existingIds.has(s.id)) s.id = generateUniqueId(); });
+        valid.forEach(s => { 
+          if (existingIds.has(s.id)) s.id = generateUniqueId(); 
+          s.name = generateUniqueSessionName(s.name); // [FIXED] 이름 중복 처리 추가
+        });
         allSessions = [...allSessions, ...valid];
         await storage.set(CONSTANTS.STORAGE_KEYS.SESSIONS, allSessions);
         renderSessions();
@@ -399,8 +429,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 7. 초기화 및 이벤트 리스너 ---
   const initialize = async () => {
+    // [REVISED] 중복 초기화 제거 및 storage.get에서 기본값 설정
     selectedDelay = await storage.get(CONSTANTS.STORAGE_KEYS.DELAY, 0);
-	selectedRestoreTarget = await storage.get(CONSTANTS.STORAGE_KEYS.RESTORE_TARGET, CONSTANTS.RESTORE_TARGETS.CURRENT_WINDOW);
+	  selectedRestoreTarget = await storage.get(CONSTANTS.STORAGE_KEYS.RESTORE_TARGET, CONSTANTS.RESTORE_TARGETS.CURRENT_WINDOW);
     delayButtons.forEach(b => b.classList.toggle('active', parseInt(b.dataset.delay, 10) === selectedDelay));
     restoreTargetButtons.forEach(b => b.classList.toggle('active', b.dataset.target === selectedRestoreTarget));
     allSessions = await storage.get(CONSTANTS.STORAGE_KEYS.SESSIONS, []);
