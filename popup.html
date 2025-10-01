@@ -5,274 +5,331 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline';">
   <title>탭 하이쿠</title>
   <style>
-    :root {
-      /* BeOS Color Palette */
-      --beos-bg: #c5c5c5;
-      --beos-gray: #dcdcdc;
-      --beos-yellow: #ffcc00;
-      --beos-blue: #3366cc;
-      --beos-text: #000000;
-      --beos-light-bevel: #ffffff;
-      --beos-dark-bevel: #838383;
-      --font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
-      
-      --beos-border-outset: 1px solid;
-      --beos-border-inset: 1px solid;
-    }
-    *, *::before, *::after { box-sizing: border-box; }
-    body {
-      font-family: var(--font-family);
-      background-color: var(--beos-bg);
-      color: var(--beos-text);
-      margin: 0;
-      width: 380px;
-      font-size: 12px;
-      /* Main window has a thicker border */
-      border: 2px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      display: flex;
-      flex-direction: column;
-      height: 480px; /* 고정 높이 부여 */
-    }
+		:root {
+		  /* BeOS Color Palette */
+		  --beos-bg: #c5c5c5;
+		  --beos-gray: #dcdcdc;
+		  --beos-yellow: #ffcc00;
+		  --beos-blue: #3366cc;
+		  --beos-text: #000000;
+		  --beos-light-bevel: #ffffff;
+		  --beos-dark-bevel: #838383;
+		  --font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
+		  
+		  --beos-border-outset: 1px solid;
+		  --beos-border-inset: 1px solid;
+		}
+		*, *::before, *::after { box-sizing: border-box; }
+		body {
+		  font-family: var(--font-family);
+		  background-color: var(--beos-bg);
+		  color: var(--beos-text);
+		  margin: 0;
+		  width: 400px;
+		  font-size: 12px;
+		  /* Main window has a thicker border */
+		  border: 2px solid;
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  display: flex;
+		  flex-direction: column;
+		  height: 480px; /* 고정 높이 부여 */
+		}
 
-    /* BeOS Window Elements */
-    .beos-window-tab {
-      background-color: var(--beos-bg);
-      padding: 2px 4px; /* Adjusted padding as the standalone button is removed */
-      display: flex;
-      align-items: center;
-      flex-shrink: 0;
-      position: relative;
-      border-bottom: 1px solid var(--beos-dark-bevel);
-    }
-    /* DELETED: The standalone ::before pseudo-element for the far-left button is removed. */
+		/* --- REFINED BeOS Window Tab --- */
+		.beos-window-tab {
+		  background-color: var(--beos-bg);
+		  padding: 2px 4px 0 4px; /* Bottom padding removed to allow tab to connect */
+		  display: flex;
+		  align-items: flex-end; /* Align tab to the bottom */
+		  flex-shrink: 0;
+		  position: relative;
+		  border-bottom: 1px solid var(--beos-dark-bevel);
+		}
 
-    .beos-window-tab h1 {
-      background-color: var(--beos-yellow);
-      font-size: 14px;
-      font-weight: bold;
-      margin: 0;
-      padding: 3px 24px 3px 40px; /* REVISED: Padding adjusted for the button on the left */
-      position: relative;
-      border-top: 1px solid var(--beos-light-bevel);
-      border-left: 1px solid var(--beos-light-bevel);
-      border-right: 1px solid var(--beos-dark-bevel);
-      border-bottom: 2px solid var(--beos-text); /* Thick bottom border */
-    }
-    /* Decorative BeOS-style button (MOVED to the front of the text) */
-    .beos-window-tab h1::before { /* CHANGED: from ::after to ::before */
-      content: '';
-      position: absolute;
-      left: 6px; /* CHANGED: from right to left */
-      top: 50%;
-      transform: translateY(-50%);
-      width: 12px;
-      height: 12px;
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-    }
-    
-    /* BeOS Menu Bar */
-    .beos-menu-bar {
-      display: flex;
-      background-color: var(--beos-bg);
-      padding: 2px 4px;
-      border-bottom: 1px solid var(--beos-dark-bevel);
-      flex-shrink: 0;
-    }
-    .menu-item {
-      position: relative;
-      padding: 4px 8px;
-      cursor: default;
-    }
-    .menu-item:hover {
-      background-color: var(--beos-blue);
-      color: white;
-    }
-    .menu-item .dropdown-content {
-      display: none;
-      position: absolute;
-      left: 0;
-      top: 100%;
-      background-color: var(--beos-bg);
-      min-width: 160px;
-      border: 2px solid; /* Dropdown menu has thicker border */
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      z-index: 100;
-      box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
-    }
-    .menu-item:hover .dropdown-content { display: block; }
-    .dropdown-content a {
-      color: black;
-      padding: 6px 10px;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .dropdown-content a:hover {
-      background-color: var(--beos-blue);
-      color: white;
-    }
-    .dropdown-content hr {
-      border: 0;
-      border-top: 1px solid var(--beos-dark-bevel);
-      margin: 2px 0;
-    }
-    .dropdown-content .option-group { padding: 4px 10px; }
-    .dropdown-content .option-group .group-label { font-size: 10px; color: #555; margin-bottom: 4px; }
-    .option-btn-group { display: flex; gap: 2px; }
-    .option-btn {
-      flex: 1;
-      padding: 2px 4px;
-      font-size: 10px;
-      background-color: var(--beos-gray);
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      cursor: pointer;
-    }
-    .option-btn.active {
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-      background-color: #a0a0a0;
-    }
+		.beos-window-tab h1 {
+		  background-color: var(--beos-yellow);
+		  font-size: 14px;
+		  font-weight: bold;
+		  margin: 0;
+		  padding: 3px 24px 3px 24px; /* Adjusted padding for button */
+		  position: relative;
+		  border-top: 1px solid var(--beos-light-bevel);
+		  border-left: 1px solid var(--beos-light-bevel);
+		  border-right: 1px solid var(--beos-dark-bevel);
+		  border-bottom: 2px solid var(--beos-text); /* Thick bottom border */
+		  display: flex; /* To center the button vertically */
+		  align-items: center;
+		}
 
-    /* Main Container */
-    .container { padding: 8px; flex-grow: 1; display: flex; flex-direction: column; }
-    
-    /* Controls Bar */
-    .controls-bar {
-      display: flex;
-      gap: 4px;
-      margin-bottom: 8px;
-    }
-    #session-input {
-      flex-grow: 1;
-      min-width: 0;
-    }
+		/* The decorative close button */
+		.beos-close-button {
+		  position: absolute;
+		  left: 6px;
+		  top: 50%;
+		  transform: translateY(-50%);
+		  width: 12px;
+		  height: 12px;
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		}
+		
+		/* BeOS Menu Bar */
+		.beos-menu-bar {
+		  display: flex;
+		  background-color: var(--beos-bg);
+		  padding: 2px 4px;
+		  border-bottom: 1px solid var(--beos-dark-bevel);
+		  flex-shrink: 0;
+		}
+		.menu-item {
+		  position: relative;
+		  padding: 4px 8px;
+		  cursor: default;
+		}
+		.menu-item:hover {
+		  background-color: var(--beos-blue);
+		  color: white;
+		}
+		.menu-item .dropdown-content {
+		  display: none;
+		  position: absolute;
+		  left: 0;
+		  top: 100%;
+		  background-color: var(--beos-bg);
+		  min-width: 160px;
+		  border: 2px solid;
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  z-index: 100;
+		  box-shadow: none; 
+		}
+		.menu-item:hover .dropdown-content { display: block; }
+		.dropdown-content a {
+		  color: black;
+		  padding: 6px 10px;
+		  text-decoration: none;
+		  display: flex;
+		  align-items: center;
+		  gap: 8px;
+		}
+		.dropdown-content a:hover {
+		  background-color: var(--beos-blue);
+		  color: white;
+		}
+		.dropdown-content hr {
+		  border: 0;
+		  border-top: 1px solid var(--beos-dark-bevel);
+		  margin: 2px 0;
+		}
 
-    /* BeOS Controls Styling */
-    .beos-button, .beos-input {
-      background-color: var(--beos-gray);
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      padding: 5px 8px; /* Adjusted padding for 1px border */
-      font-family: var(--font-family);
-      font-size: 12px;
-    }
-    .beos-button {
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-    .beos-button:active {
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-      padding: 6px 7px 4px 9px; /* Shifting content for pressed effect */
-    }
-    .beos-input {
-      width: 100%;
-      border: var(--beos-border-inset);
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-    }
-    .beos-input:focus {
-      outline: 2px solid var(--beos-blue);
-      outline-offset: -2px;
-    }
-    .beos-emoji-icon {
-      display: inline-block;
-      font-size: 14px; /* Emoji size */
-      line-height: 1;
-    }
+		/* --- Reverted Option Menu Styles --- */
+		.dropdown-content .option-group { padding: 4px 10px; }
+		.dropdown-content .option-group .group-label { font-size: 10px; color: #555; margin-bottom: 4px; }
+		.option-btn-group { display: flex; gap: 2px; }
+		.option-btn {
+		  flex: 1;
+		  padding: 2px 4px;
+		  font-size: 10px;
+		  background-color: var(--beos-gray);
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  cursor: pointer;
+		}
+		.option-btn.active {
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  background-color: #a0a0a0;
+		}
 
-    /* Session List Styling */
-    #session-list-container {
-      flex-grow: 1;
-      min-height: 0;
-      border: var(--beos-border-inset);
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-      background-color: #fff;
-      padding: 2px;
-    }
-    #session-list {
-      list-style: none; padding: 0; margin: 0;
-      height: 100%;
-      overflow-y: auto;
-    }
-    .session-item { padding: 6px; }
-    .session-item:hover {
-      background-color: var(--beos-blue);
-      color: white;
-    }
-    /* Ensure child element colors change on hover too */
-    .session-item:hover .session-meta { color: #e0e0e0; }
-    .session-item:hover .beos-icon-button { color: white; }
+		/* Main Container */
+		.container { 
+		  padding: 0; 
+		  flex-grow: 1; 
+		  display: flex; 
+		  flex-direction: column;
+		  min-height: 0; 
+		}
 
-    .session-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-    .session-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-width: 0; }
-    .session-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .session-name[contenteditable="true"] {
-        background-color: white;
-        color: black;
-        outline: 1px solid var(--beos-blue);
-        padding: 0 2px;
-        margin: -1px -3px; /* To compensate for padding */
-    }
-    .session-meta { font-size: 10px; color: #555; }
-    .session-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-    .beos-icon-button {
-      background: none; border: none; padding: 2px; cursor: pointer;
-      font-size: 14px; /* [MODIFIED] Emoji button size 줄임 (16px -> 14px) */
-      line-height: 1;
-      color: var(--beos-text);
-    }
-    .beos-icon-button:active {
-      border: var(--beos-border-inset);
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-      background-color: #b0b0b0;
-    }
-    
-    .session-details { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dotted var(--beos-dark-bevel); }
-    .session-details-list { list-style: none; padding: 0 0 0 8px; margin: 0; max-height: 120px; overflow-y: auto; }
-    .session-details-list li { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		/* Controls Bar */
+		.controls-bar {
+		  display: flex;
+		  gap: 4px;
+		  margin: 8px 8px 8px;
+		}
+		#session-input {
+		  flex-grow: 1;
+		  min-width: 0;
+		}
 
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 14px; }
-    ::-webkit-scrollbar-track { background: var(--beos-gray); }
-    ::-webkit-scrollbar-thumb { 
-      background: var(--beos-bg); 
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-    }
-    ::-webkit-scrollbar-button { 
-      background: var(--beos-bg); 
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      height: 14px; 
-      width: 14px;
-      display: block;
-    }
-    ::-webkit-scrollbar-button:start:decrement { background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black"><path d="M8 5l-4 4h8z"/></svg>'); background-repeat: no-repeat; background-position: center; }
-    ::-webkit-scrollbar-button:end:increment { background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black"><path d="M8 11l4-4H4z"/></svg>'); background-repeat: no-repeat; background-position: center; }
+		/* BeOS Controls Styling */
+		.beos-button, .beos-input {
+		  background-color: var(--beos-gray);
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  padding: 5px 8px;
+		  font-family: var(--font-family);
+		  font-size: 12px;
+		}
+		.beos-button {
+		  cursor: pointer;
+		  display: flex;
+		  align-items: center;
+		  justify-content: center;
+		  gap: 6px;
+		  flex-shrink: 0;
+		}
+		/* --- 버그 수정: :disabled 상태를 :active와 분리 --- */
+		.beos-button:active {
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  padding: 6px 7px 4px 9px; /* Shifting content for pressed effect */
+		}
+		.beos-button:disabled {
+		  color: var(--beos-dark-bevel);
+		  cursor: wait;
+		}
+		.beos-input {
+		  width: 100%;
+		  border: var(--beos-border-inset);
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		}
+		.beos-input:focus {
+		  outline: 2px solid var(--beos-blue);
+		  outline-offset: -2px;
+		}
+		.beos-emoji-icon {
+		  display: inline-block;
+		  font-size: 14px; /* Emoji size */
+		  line-height: 1;
+		}
 
-    /* Toast */
-    #toast {
-      position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%);
-      background-color: var(--beos-bg); color: var(--beos-text);
-      padding: 8px 12px; font-size: 12px; transition: bottom 0.3s ease-in-out;
-      z-index: 999; 
-      border: 2px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
-    }
-    #toast.show { bottom: 10px; }
+		/* Session List Styling */
+		#session-list-container {
+		  flex-grow: 1;
+		  min-height: 0;
+		  border: var(--beos-border-inset);
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  background-color: #fff;
+		  padding: 2px;
+		  overflow-y: auto;
+		  margin: 0 8px 8px;
+		}
+		#session-list {
+		  list-style: none; padding: 0; margin: 0;
+		}
+		.session-item { padding: 6px; }
+		.session-item:hover {
+		  background-color: var(--beos-blue);
+		  color: white;
+		}
+		/* Ensure child element colors change on hover too */
+		.session-item:hover .session-meta { color: #e0e0e0; }
+		.session-item:hover .beos-icon-button { color: white; }
+
+        /* --- 기능 개선: 고정된 세션 스타일 --- */
+		.session-item.pinned {
+          background-color: #fdfbe8; /* 은은한 노란색 배경 */
+        }
+        .session-item.pinned:hover {
+          background-color: var(--beos-blue); /* 호버 스타일은 유지 */
+        }
+        .session-item.pinned .session-name::before {
+          content: '📍';
+          margin-right: 6px;
+        }
+
+		.session-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+		.session-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-width: 0; }
+		.session-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.session-meta { font-size: 10px; color: #555; }
+		.session-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+		.beos-icon-button {
+		  background: none; border: none; padding: 2px; cursor: pointer;
+		  font-size: 14px; 
+		  line-height: 1;
+		  color: var(--beos-text);
+		}
+		.beos-icon-button:active {
+		  border: var(--beos-border-inset);
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  background-color: #b0b0b0;
+		}
+		.beos-icon-button:disabled {
+		  color: var(--beos-dark-bevel);
+		  cursor: wait;
+		}
+
+		.session-details { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dotted var(--beos-dark-bevel); }
+		.session-details-list { list-style: none; padding: 0 0 0 8px; margin: 0; max-height: 120px; overflow-y: auto; }
+		.session-details-list li { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+		/* Custom Scrollbar */
+		::-webkit-scrollbar { width: 14px; }
+		::-webkit-scrollbar-track { background: var(--beos-gray); }
+		::-webkit-scrollbar-thumb { 
+		  background: var(--beos-bg); 
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		}
+		::-webkit-scrollbar-button { 
+		  background: var(--beos-bg); 
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  height: 14px; 
+		  width: 14px;
+		  display: block;
+		}
+
+		/* Toast - 잔상 문제 해결 및 디자인 개선 */
+		#toast {
+		  position: fixed;
+		  bottom: -60px; /* 더 확실히 숨기기 위해 값 증가 */
+		  left: 50%;
+		  transform: translateX(-50%);
+		  background-color: var(--beos-bg);
+		  color: var(--beos-text);
+		  padding: 8px 12px;
+		  font-size: 12px;
+		  z-index: 999;
+		  border: 2px solid;
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  box-shadow: none;
+		  display: flex;
+		  align-items: center;
+		  gap: 12px;
+		  opacity: 0;
+		  visibility: hidden;
+		  transition: bottom 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0s 0.3s;
+		}
+		#toast.show {
+		  bottom: 10px;
+		  opacity: 1;
+		  visibility: visible;
+		  transition: bottom 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0s 0s;
+		}
+		
+		/* BeOS 스타일의 실행 취소 버튼 */
+		.toast-undo-btn {
+		  background-color: var(--beos-gray);
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  padding: 2px 8px;
+		  font-family: var(--font-family);
+		  font-size: 11px;
+		  cursor: pointer;
+		  flex-shrink: 0; /* 버튼 크기가 줄어들지 않도록 설정 */
+		}
+		.toast-undo-btn:active {
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  padding: 3px 7px 1px 9px; /* 눌리는 효과 */
+		}
+  
   </style>
 </head>
 <body>
 
   <div class="beos-window-tab">
-    <h1>탭 하이쿠</h1>
+    <h1>
+      <div class="beos-close-button"></div>
+      탭 하이쿠
+    </h1>
   </div>
   
   <div class="beos-menu-bar">
@@ -300,18 +357,18 @@
         <div class="option-group">
           <div class="group-label">탭 열기 지연</div>
           <div class="option-btn-group delay-btn-group">
-            <button class="option-btn delay-btn" data-delay="0">0초</button>
-            <button class="option-btn delay-btn" data-delay="1">1초</button>
-            <button class="option-btn delay-btn" data-delay="2">2초</button>
-            <button class="option-btn delay-btn" data-delay="3">3초</button>
+            <button class="option-btn" data-key="restoreDelay" data-value="0">0초</button>
+            <button class="option-btn" data-key="restoreDelay" data-value="1">1초</button>
+            <button class="option-btn" data-key="restoreDelay" data-value="2">2초</button>
+            <button class="option-btn" data-key="restoreDelay" data-value="3">3초</button>
           </div>
         </div>
         <hr>
         <div class="option-group">
           <div class="group-label">복원 위치</div>
           <div class="option-btn-group restore-target-btn-group">
-            <button class="option-btn restore-target-btn" data-target="current-window">현재 창</button>
-            <button class="option-btn restore-target-btn" data-target="new-window">새 창</button>
+            <button class="option-btn" data-key="restoreTarget" data-value="current-window">현재 창</button>
+            <button class="option-btn" data-key="restoreTarget" data-value="new-window">새 창</button>
           </div>
         </div>
       </div>
@@ -320,7 +377,7 @@
   
   <div class="container">
     <div class="controls-bar">
-      <input type="text" id="session-input" class="beos-input" placeholder="이름으로 검색 또는 새 세션 저장" maxlength="200">
+      <input type="text" id="session-input" class="beos-input" placeholder="이름을 정해서 새 세션 저장 또는 검색 " maxlength="200">
       <button id="save-session-btn" class="beos-button">
         <span class="beos-emoji-icon">💾</span>
         저장
@@ -334,6 +391,25 @@
 
   <input type="file" id="import-file-input" style="display: none;" accept=".json">
   <div id="toast"></div>
+
+  <template id="session-item-template">
+    <li class="session-item">
+      <div class="session-header">
+        <div class="session-info">
+          <span class="session-name"></span>
+          <!-- 버그 수정: div.session-meta로 감싸서 CSS가 올바르게 적용되도록 함 -->
+          <div class="session-meta">
+            <span class="session-meta-date"></span>
+            <span class="session-meta-count"></span>
+          </div>
+        </div>
+        <div class="session-actions"></div>
+      </div>
+      <div class="session-details" style="display: none;">
+        <ul class="session-details-list"></ul>
+      </div>
+    </li>
+  </template>
 
 </body>
 <script src="popup.js"></script>
