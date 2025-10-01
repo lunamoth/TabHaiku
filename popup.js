@@ -2,7 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const CONSTANTS = {
     UI: {
-      TOAST_DURATION: 4000, // 실행 취소를 위해 시간 약간 늘림
+      TOAST_DURATION: 4000,
       SESSION_NAME_MAX_LENGTH: 200,
       SEARCH_DEBOUNCE_TIME: 200,
     },
@@ -10,12 +10,11 @@ document.addEventListener('DOMContentLoaded', () => {
       SESSION_PREFIX: '',
     },
     PROTOCOLS: {
-      // --- 버그 수정: 따옴표 위치 오류 수정 ---
       SAFE: ['http:', 'https:'],
     },
     TIMING: {
-      TAB_CREATION_DELAY: 100, // 이 상수는 현재 코드에서 직접 사용되지는 않음
-      EXPORT_URL_REVOKE_DELAY: 60000, // 60초
+      TAB_CREATION_DELAY: 100,
+      EXPORT_URL_REVOKE_DELAY: 60000,
     },
     STORAGE_KEYS: {
       SESSIONS: 'sessions',
@@ -62,8 +61,6 @@ document.addEventListener('DOMContentLoaded', () => {
       IMPORT_INVALID_FORMAT: '❌ 잘못된 파일 형식입니다.',
       IMPORT_NO_VALID_SESSIONS: '유효한 세션이 없습니다.',
       OPTIONS_SAVE_FAILED: '❌ 옵션 저장 실패',
-      
-      // --- 코드 최적화: 함수형 메시지 이름 명확화 ---
       createDuplicateNameWarning: (name) => `⚠️ 중복된 이름입니다. '${name}'(으)로 저장합니다.`,
       createSessionUpdatedMessage: (name) => `🔄 '${escapeHtml(name)}' 세션을 업데이트했습니다.`,
       createSessionSavedMessage: (name) => `💾 '${escapeHtml(name)}' 세션을 저장했습니다.`,
@@ -77,14 +74,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   
-  // --- DOM 요소 ---
   const sessionInput = document.getElementById('session-input');
   const saveBtn = document.getElementById('save-session-btn');
   const sessionListEl = document.getElementById('session-list');
   const toastEl = document.getElementById('toast');
   const sessionItemTemplate = document.getElementById('session-item-template');
-
-  // 메뉴바 요소
   const saveCurrentBtn = document.getElementById('save-current-btn');
   const importBtn = document.getElementById('import-btn');
   const importFileInput = document.getElementById('import-file-input');
@@ -92,7 +86,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const delayBtnGroup = document.querySelector('.delay-btn-group');
   const restoreTargetBtnGroup = document.querySelector('.restore-target-btn-group');
 
-  // --- 상태 관리 ---
   let allSessions = [];
   let toastTimeout;
   let selectedDelay = 0;
@@ -100,7 +93,6 @@ document.addEventListener('DOMContentLoaded', () => {
   let inputDebounce;
   let lastDeletedSession = null;
 
-  // --- Chrome API 추상화 (단순화됨) ---
   const storage = {
     get: async (key, defaultValue = []) => {
       const result = await chrome.storage.local.get(key);
@@ -115,14 +107,6 @@ document.addEventListener('DOMContentLoaded', () => {
     },
   };
 
-  chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === 'local' && changes[CONSTANTS.STORAGE_KEYS.SESSIONS]) {
-      allSessions = changes[CONSTANTS.STORAGE_KEYS.SESSIONS].newValue || [];
-      renderSessions();
-    }
-  });
-
-  // --- 유틸리티 함수 ---
   const formatDate = (timestamp) => {
     const d = new Date(timestamp);
     const datePart = new Intl.DateTimeFormat('ko-KR', { year: 'numeric', month: '2-digit', day: '2-digit' }).format(d);
@@ -134,14 +118,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const timePart = `${ampm} ${hours}시 ${minutes}분`;
     return `${datePart} ${timePart}`;
   };
+  
+  const escapeHtml = (str) => String(str).replace(/[&<>"'\/]/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;', '/': '&#x2F;' }[s]));
 
-  // --- 보안 강화: innerHTML 대신 textContent를 사용하여 XSS 방지 ---
   const showToast = (message, duration = CONSTANTS.UI.TOAST_DURATION, undoCallback = null) => {
     clearTimeout(toastTimeout);
-    toastEl.innerHTML = ''; // 자식 요소 모두 제거
+    toastEl.innerHTML = '';
     
     const messageSpan = document.createElement('span');
-    messageSpan.textContent = message; // textContent로 안전하게 텍스트 설정
+    messageSpan.textContent = message;
     toastEl.appendChild(messageSpan);
 
     if (undoCallback) {
@@ -159,13 +144,9 @@ document.addEventListener('DOMContentLoaded', () => {
     toastEl.classList.add('show');
     toastTimeout = setTimeout(() => {
         toastEl.classList.remove('show');
-        if (undoCallback) {
-            lastDeletedSession = null;
-        }
+        if (undoCallback) lastDeletedSession = null;
     }, duration);
   };
-  
-  const escapeHtml = (str) => String(str).replace(/[&<>"'\/]/g, s => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;', '/': '&#x2F;' }[s]));
   
   const isValidUrl = (url) => {
     if (!url || typeof url !== 'string') return false;
@@ -198,11 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const findSessionById = (id) => allSessions.find(s => String(s.id) === String(id));
   const findSessionIndexById = (id) => allSessions.findIndex(s => String(s.id) === String(id));
-
-  const getSessionTimestamp = (session) => {
-    const id = session.id;
-    return typeof id === 'string' ? parseInt(id.split('-')[0], 10) : id;
-  };
+  const getSessionTimestamp = (session) => parseInt(String(session.id).split('-')[0], 10);
 
   const createActionButton = (action, title, icon) => {
     const button = document.createElement('button');
@@ -213,7 +190,52 @@ document.addEventListener('DOMContentLoaded', () => {
     return button;
   };
 
-  // --- UI 렌더링 ---
+  const createSessionListItem = (session) => {
+    const item = sessionItemTemplate.content.cloneNode(true).firstElementChild;
+    item.dataset.sessionId = session.id;
+
+    if (session.isPinned) item.classList.add('pinned');
+  
+    const groupCount = new Set(session.tabs.map(t => t.groupId).filter(Boolean)).size;
+    const dateMeta = formatDate(getSessionTimestamp(session));
+    const countMeta = `탭: ${session.tabs.length}${groupCount > 0 ? `, 그룹: ${groupCount}` : ''}`;
+    
+    item.querySelector('.session-name').textContent = session.name;
+    item.querySelector('.session-meta-date').textContent = dateMeta;
+    item.querySelector('.session-meta-count').textContent = countMeta;
+    
+    const sessionActions = item.querySelector('.session-actions');
+    
+    const actions = [
+      { action: CONSTANTS.ACTIONS.RESTORE, title: '복원(열기)', icon: '🚀' },
+      { action: CONSTANTS.ACTIONS.COPY, title: 'URL 복사', icon: '📋' },
+      { action: CONSTANTS.ACTIONS.UPDATE, title: '덮어쓰기', icon: '🔄' },
+      { action: CONSTANTS.ACTIONS.RENAME, title: '이름 변경', icon: '✏️' },
+      { action: CONSTANTS.ACTIONS.PIN, title: session.isPinned ? '고정 해제' : '세션 고정', icon: session.isPinned ? '📍' : '📌' },
+      { action: CONSTANTS.ACTIONS.DELETE, title: '삭제', icon: '🗑️' },
+    ];
+
+    actions.forEach(({ action, title, icon }) => {
+      sessionActions.appendChild(createActionButton(action, title, icon));
+    });
+  
+    const detailsList = item.querySelector('.session-details-list');
+    session.tabs.forEach(tab => {
+      const tabItem = document.createElement('li');
+      tabItem.textContent = tab.url;
+      detailsList.appendChild(tabItem);
+    });
+  
+    item.querySelector('.session-header').addEventListener('click', (e) => {
+      if (!e.target.closest('.beos-icon-button')) {
+        const details = item.querySelector('.session-details');
+        details.style.display = details.style.display === 'block' ? 'none' : 'block';
+      }
+    });
+  
+    return item;
+  };
+
   const renderSessions = () => {
     const fragment = document.createDocumentFragment();
     const searchTerm = sessionInput.value.trim().toLowerCase();
@@ -237,9 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const sortedSessions = [...filteredSessions].sort((a, b) => {
-      if (a.isPinned !== b.isPinned) {
-        return a.isPinned ? -1 : 1;
-      }
+      if (a.isPinned !== b.isPinned) return a.isPinned ? -1 : 1;
       return getSessionTimestamp(b) - getSessionTimestamp(a);
     });
 
@@ -247,60 +267,6 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionListEl.replaceChildren(fragment);
   };
   
-  const createSessionListItem = (session) => {
-    const item = sessionItemTemplate.content.cloneNode(true).firstElementChild;
-    item.dataset.sessionId = session.id;
-
-    // --- 기능 개선: 고정된 세션에 'pinned' 클래스 추가 ---
-    if (session.isPinned) {
-      item.classList.add('pinned');
-    }
-  
-    const groupCount = new Set(session.tabs.map(t => t.groupId).filter(Boolean)).size;
-    const sessionIdNum = getSessionTimestamp(session);
-    const dateMeta = formatDate(sessionIdNum);
-    const countMeta = `탭: ${session.tabs.length}${groupCount > 0 ? `, 그룹: ${groupCount}` : ''}`;
-    
-    item.querySelector('.session-name').textContent = session.name;
-    item.querySelector('.session-meta-date').textContent = dateMeta;
-    item.querySelector('.session-meta-count').textContent = countMeta;
-    
-    const sessionActions = item.querySelector('.session-actions');
-    
-    // --- 코드 개선: 액션 버튼 생성 로직을 배열 기반으로 변경하여 가독성 및 유지보수성 향상 ---
-    const actions = [
-      { action: CONSTANTS.ACTIONS.RESTORE, title: '복원(열기)', icon: '🚀' },
-      { action: CONSTANTS.ACTIONS.COPY, title: 'URL 복사', icon: '📋' },
-      { action: CONSTANTS.ACTIONS.UPDATE, title: '덮어쓰기', icon: '🔄' },
-      { action: CONSTANTS.ACTIONS.RENAME, title: '이름 변경', icon: '✏️' },
-      { action: CONSTANTS.ACTIONS.PIN, title: session.isPinned ? '고정 해제' : '세션 고정', icon: session.isPinned ? '📍' : '📌' },
-      { action: CONSTANTS.ACTIONS.DELETE, title: '삭제', icon: '🗑️' },
-    ];
-
-    actions.forEach(({ action, title, icon }) => {
-      sessionActions.appendChild(createActionButton(action, title, icon));
-    });
-  
-    const detailsList = item.querySelector('.session-details-list');
-    session.tabs.forEach(tab => {
-      const tabItem = document.createElement('li');
-      tabItem.textContent = tab.url;
-      detailsList.appendChild(tabItem);
-    });
-  
-    const sessionHeader = item.querySelector('.session-header');
-    const sessionDetails = item.querySelector('.session-details');
-    sessionHeader.addEventListener('click', (e) => {
-      if (!e.target.closest('.beos-icon-button')) {
-        sessionDetails.style.display = sessionDetails.style.display === 'block' ? 'none' : 'block';
-      }
-    });
-  
-    return item;
-  };
-
-  // --- 핵심 로직 ---
-
   const updateAndSaveSessions = async (updateFunction, { successMessage, errorMessagePrefix }) => {
     const originalSessions = JSON.parse(JSON.stringify(allSessions));
     try {
@@ -330,15 +296,16 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(CONSTANTS.MESSAGES.GET_TAB_GROUPS_FAILED);
       }
 
-      const validTabs = tabs.filter(tab => tab.url && isValidUrl(tab.url));
-      return validTabs.map(tab => ({ 
-        url: tab.url, 
-        title: tab.title, 
-        pinned: tab.pinned, 
-        groupId: tab.groupId,
-        groupInfo: tab.groupId > -1 ? allTabGroups.find(g => g.id === tab.groupId) : null,
-        windowId: tab.windowId
-      }));
+      return tabs
+        .filter(tab => tab.url && isValidUrl(tab.url))
+        .map(tab => ({ 
+          url: tab.url, 
+          title: tab.title, 
+          pinned: tab.pinned, 
+          groupId: tab.groupId,
+          groupInfo: tab.groupId > -1 ? allTabGroups.find(g => g.id === tab.groupId) : null,
+          windowId: tab.windowId
+        }));
     } catch (error) {
       showToast(CONSTANTS.MESSAGES.GET_TABS_FAILED);
       return [];
@@ -347,8 +314,11 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const generateUniqueSessionName = (baseName) => {
     if (!isDuplicateSessionName(baseName)) return baseName;
-    let counter = 2, newName = `${baseName} (${counter})`;
-    while (isDuplicateSessionName(newName)) newName = `${baseName} (${++counter})`;
+    let counter = 2;
+    let newName;
+    do {
+      newName = `${baseName} (${counter++})`;
+    } while (isDuplicateSessionName(newName));
     showToast(CONSTANTS.MESSAGES.createDuplicateNameWarning(newName));
     return newName;
   };
@@ -365,17 +335,15 @@ document.addEventListener('DOMContentLoaded', () => {
     await updateAndSaveSessions(
       () => {
         if (overwriteId) {
-          const sessionIndex = allSessions.findIndex(s => String(s.id) === String(overwriteId));
+          const sessionIndex = findSessionIndexById(overwriteId);
           if (sessionIndex === -1) {
             showToast(CONSTANTS.MESSAGES.UPDATE_SESSION_NOT_FOUND);
             return false; 
           }
-          const name = overwriteName;
-          allSessions[sessionIndex] = { ...allSessions[sessionIndex], tabs: tabs, name: name };
-          successMessage = CONSTANTS.MESSAGES.createSessionUpdatedMessage(name);
+          allSessions[sessionIndex] = { ...allSessions[sessionIndex], tabs, name: overwriteName };
+          successMessage = CONSTANTS.MESSAGES.createSessionUpdatedMessage(overwriteName);
         } else {
-          let name = sessionInput.value.trim();
-          if (!name) name = `${CONSTANTS.DEFAULTS.SESSION_PREFIX} ${formatDate(Date.now())}`;
+          let name = sessionInput.value.trim() || `${CONSTANTS.DEFAULTS.SESSION_PREFIX} ${formatDate(Date.now())}`;
           name = generateUniqueSessionName(name);
           allSessions.push({ id: generateUniqueId(), name, tabs, isPinned: false });
           successMessage = CONSTANTS.MESSAGES.createSessionSavedMessage(name);
@@ -392,24 +360,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const createTabsSequentiallyWithDelay = async (windowId, tabsData, delayMs = 0) => {
     const results = [];
-    for (let i = 0; i < tabsData.length; i++) {
-      const tabData = tabsData[i];
-      if (i > 0 && delayMs > 0) {
+    for (const tabData of tabsData) {
+      if (results.length > 0 && delayMs > 0) {
         await new Promise(resolve => setTimeout(resolve, delayMs));
       }
       try {
-        const createdTab = await chrome.tabs.create({
-          windowId,
-          url: tabData.url,
-          pinned: tabData.pinned,
-          active: false
-        });
+        const createdTab = await chrome.tabs.create({ windowId, url: tabData.url, pinned: tabData.pinned, active: false });
         results.push(createdTab);
       } catch (error) {
         results.push(null);
       }
     }
-    return results;
+    return results.filter(Boolean);
   };
 
   const getTargetWindow = async (restoreTarget) => {
@@ -449,14 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const finalizeRestoration = async (validCreatedTabs, targetWindowId, initialTabId) => {
     const firstUnpinnedTab = validCreatedTabs.find(tab => !tab.pinned);
     const tabToActivate = firstUnpinnedTab || validCreatedTabs[0];
-
-    if (tabToActivate) {
-      await chrome.tabs.update(tabToActivate.id, { active: true });
-    }
-
-    if (chrome.windows.update) {
-      await chrome.windows.update(targetWindowId, { focused: true });
-    }
+    if (tabToActivate) await chrome.tabs.update(tabToActivate.id, { active: true });
+    if (chrome.windows.update) await chrome.windows.update(targetWindowId, { focused: true });
     if (initialTabId && validCreatedTabs.length > 0) {
       try { await chrome.tabs.remove(initialTabId); } catch (e) {}
     }
@@ -468,27 +424,17 @@ document.addEventListener('DOMContentLoaded', () => {
       showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
       return;
     }
-
     showToast(CONSTANTS.MESSAGES.createSessionRestoreStartedMessage(session.name, selectedDelay));
-
     try {
       const { targetWindowId, initialTabId } = await getTargetWindow(selectedRestoreTarget);
-      const createdTabs = await createTabsSequentiallyWithDelay(targetWindowId, session.tabs, selectedDelay * 1000);
-      const validCreatedTabs = createdTabs.filter(Boolean);
-
-      if (validCreatedTabs.length === 0 && selectedRestoreTarget === CONSTANTS.RESTORE_TARGETS.NEW_WINDOW && initialTabId) {
-          // If no tabs were created in a new window, don't close the initial tab.
-          showToast(CONSTANTS.MESSAGES.SESSION_RESTORE_FAILED);
-          return;
-      }
-      
-      await applyTabGroups(session.tabs, createdTabs, targetWindowId);
-      await finalizeRestoration(validCreatedTabs, targetWindowId, initialTabId);
+      const validCreatedTabs = await createTabsSequentiallyWithDelay(targetWindowId, session.tabs, selectedDelay * 1000);
 
       if (validCreatedTabs.length > 0) {
-          showToast(CONSTANTS.MESSAGES.createSessionRestoreCompletedMessage(session.name));
+        await applyTabGroups(session.tabs, validCreatedTabs, targetWindowId);
+        await finalizeRestoration(validCreatedTabs, targetWindowId, initialTabId);
+        showToast(CONSTANTS.MESSAGES.createSessionRestoreCompletedMessage(session.name));
       } else {
-          showToast(CONSTANTS.MESSAGES.SESSION_RESTORE_FAILED);
+        showToast(CONSTANTS.MESSAGES.SESSION_RESTORE_FAILED);
       }
     } catch (error) {
       showToast(CONSTANTS.MESSAGES.SESSION_RESTORE_ERROR);
@@ -498,7 +444,6 @@ document.addEventListener('DOMContentLoaded', () => {
   const handleUpdateSession = async (sessionId) => {
     const session = findSessionById(sessionId);
     if (!session) return;
-    
     if (confirm(CONSTANTS.MESSAGES.createConfirmUpdateMessage(session.name))) {
       await handleSaveSession(sessionId, session.name);
     }
@@ -516,7 +461,6 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         await storage.set(CONSTANTS.STORAGE_KEYS.SESSIONS, allSessions);
         renderSessions();
-
         const undoCallback = async () => {
             if (!lastDeletedSession) return;
             allSessions.splice(lastDeletedSession.index, 0, lastDeletedSession.session);
@@ -540,77 +484,46 @@ document.addEventListener('DOMContentLoaded', () => {
   
   const handleRenameSession = async (sessionId) => {
     const sessionIndex = findSessionIndexById(sessionId);
-    if (sessionIndex === -1) {
-        showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
-        return;
-    }
+    if (sessionIndex === -1) return showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
 
     const session = allSessions[sessionIndex];
-    const originalName = session.name;
-    const newName = prompt('새 세션 이름을 입력하세요:', originalName);
+    const newName = prompt('새 세션 이름을 입력하세요:', session.name);
 
     if (newName === null) return;
     const trimmedNewName = newName.trim();
     
-    if (!trimmedNewName) {
-      showToast(CONSTANTS.MESSAGES.NAME_CANNOT_BE_EMPTY);
-      return;
-    }
-    if (trimmedNewName.length > CONSTANTS.UI.SESSION_NAME_MAX_LENGTH) {
-      showToast(CONSTANTS.MESSAGES.createNameTooLongMessage(CONSTANTS.UI.SESSION_NAME_MAX_LENGTH));
-      return;
-    }
-    if (trimmedNewName === originalName) return;
-    if (isDuplicateSessionName(trimmedNewName, session.id)) {
-      showToast(CONSTANTS.MESSAGES.createNameAlreadyExistsMessage(trimmedNewName));
-      return;
-    }
+    if (!trimmedNewName) return showToast(CONSTANTS.MESSAGES.NAME_CANNOT_BE_EMPTY);
+    if (trimmedNewName.length > CONSTANTS.UI.SESSION_NAME_MAX_LENGTH) return showToast(CONSTANTS.MESSAGES.createNameTooLongMessage(CONSTANTS.UI.SESSION_NAME_MAX_LENGTH));
+    if (trimmedNewName === session.name) return;
+    if (isDuplicateSessionName(trimmedNewName, session.id)) return showToast(CONSTANTS.MESSAGES.createNameAlreadyExistsMessage(trimmedNewName));
     
     await updateAndSaveSessions(
-        () => {
-            allSessions[sessionIndex].name = trimmedNewName;
-            return true;
-        },
-        {
-            successMessage: CONSTANTS.MESSAGES.createNameChangedMessage(trimmedNewName),
-            errorMessagePrefix: CONSTANTS.MESSAGES.RENAME_FAILED
-        }
+        () => { allSessions[sessionIndex].name = trimmedNewName; return true; },
+        { successMessage: CONSTANTS.MESSAGES.createNameChangedMessage(trimmedNewName), errorMessagePrefix: CONSTANTS.MESSAGES.RENAME_FAILED }
     );
   };
 
   const handlePinSession = async (sessionId) => {
     const sessionIndex = findSessionIndexById(sessionId);
-    if (sessionIndex === -1) {
-      showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
-      return;
-    }
+    if (sessionIndex === -1) return showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
 
     let isNowPinned;
     await updateAndSaveSessions(
         () => {
-            allSessions[sessionIndex].isPinned = !allSessions[sessionIndex].isPinned;
-            isNowPinned = allSessions[sessionIndex].isPinned;
+            isNowPinned = !allSessions[sessionIndex].isPinned;
+            allSessions[sessionIndex].isPinned = isNowPinned;
             return true;
         },
-        {
-            successMessage: () => isNowPinned ? CONSTANTS.MESSAGES.SESSION_PINNED : CONSTANTS.MESSAGES.SESSION_UNPINNED,
-            errorMessagePrefix: CONSTANTS.MESSAGES.PIN_FAILED
-        }
+        { successMessage: () => isNowPinned ? CONSTANTS.MESSAGES.SESSION_PINNED : CONSTANTS.MESSAGES.SESSION_UNPINNED, errorMessagePrefix: CONSTANTS.MESSAGES.PIN_FAILED }
     );
   };
   
   const handleCopySessionUrls = async (sessionId) => {
     const session = findSessionById(sessionId);
-    if (!session) {
-        showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
-        return;
-    }
+    if (!session) return showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
 
     const urlsToCopy = session.tabs.map(tab => tab.url).join('\n');
-    if (!urlsToCopy) {
-        showToast(CONSTANTS.MESSAGES.NO_URLS_TO_COPY);
-        return;
-    }
+    if (!urlsToCopy) return showToast(CONSTANTS.MESSAGES.NO_URLS_TO_COPY);
 
     try {
         await navigator.clipboard.writeText(urlsToCopy);
@@ -621,24 +534,42 @@ document.addEventListener('DOMContentLoaded', () => {
   };
 
   const handleExport = () => {
-    if (allSessions.length === 0) { showToast(CONSTANTS.MESSAGES.NO_SESSIONS_TO_EXPORT); return; }
+    if (allSessions.length === 0) return showToast(CONSTANTS.MESSAGES.NO_SESSIONS_TO_EXPORT);
     const dataStr = JSON.stringify(allSessions, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const now = new Date();
-    const year = now.getFullYear().toString().slice(-2);
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
-    const day = now.getDate().toString().padStart(2, '0');
-    const filename = `${year}${month}${day}_TabHaiku_Backup.json`;
+    const filename = `${now.getFullYear().toString().slice(-2)}${(now.getMonth() + 1).toString().padStart(2, '0')}${now.getDate().toString().padStart(2, '0')}_TabHaiku_Backup.json`;
     
-    chrome.downloads.download({ url, filename }, (downloadId) => {
-      if (downloadId === undefined && chrome.runtime.lastError) {
-        URL.revokeObjectURL(url);
-      } else {
-        setTimeout(() => URL.revokeObjectURL(url), CONSTANTS.TIMING.EXPORT_URL_REVOKE_DELAY);
-      }
+    chrome.downloads.download({ url, filename }, () => {
+      setTimeout(() => URL.revokeObjectURL(url), CONSTANTS.TIMING.EXPORT_URL_REVOKE_DELAY);
     });
     showToast(CONSTANTS.MESSAGES.EXPORT_SUCCESS);
+  };
+
+  const mergeSessions = (existingSessions, sessionsToImport) => {
+    const combinedSessions = [...existingSessions];
+    const existingNames = new Set(existingSessions.map(s => s.name));
+    const existingIds = new Set(existingSessions.map(s => String(s.id)));
+
+    sessionsToImport.forEach(session => {
+        let newSession = { ...session };
+        if (!newSession.hasOwnProperty('isPinned')) newSession.isPinned = false;
+
+        if (existingIds.has(String(newSession.id))) newSession.id = generateUniqueId();
+        
+        let newName = newSession.name;
+        while (existingNames.has(newName)) {
+             const match = newName.match(/^(.*) \((\d+)\)$/);
+             newName = match ? `${match[1]} (${parseInt(match[2], 10) + 1})` : `${newName} (2)`;
+        }
+        newSession.name = newName;
+        
+        combinedSessions.push(newSession);
+        existingNames.add(newSession.name);
+        existingIds.add(String(newSession.id));
+    });
+    return combinedSessions;
   };
 
   const handleImport = () => {
@@ -649,58 +580,20 @@ document.addEventListener('DOMContentLoaded', () => {
       return importFileInput.value = '';
     }
     const reader = new FileReader();
-
-    reader.onerror = () => {
-        showToast(CONSTANTS.MESSAGES.IMPORT_FILE_READ_ERROR);
-        importFileInput.value = '';
-    };
-
+    reader.onerror = () => { showToast(CONSTANTS.MESSAGES.IMPORT_FILE_READ_ERROR); importFileInput.value = ''; };
     reader.onload = async (e) => {
       try {
-        const imported = JSON.parse(e.target.result);
-        if (!Array.isArray(imported)) throw new Error("Invalid format");
+        const importedData = JSON.parse(e.target.result);
+        if (!Array.isArray(importedData)) throw new Error("Invalid format");
         
-        const valid = [];
-        for (const s of imported) {
-            if (isValidSession(s)) {
-                if (!s.hasOwnProperty('isPinned')) {
-                    s.isPinned = false;
-                }
-                valid.push(s);
-            }
-        }
-        
-        if (valid.length === 0) throw new Error(CONSTANTS.MESSAGES.IMPORT_NO_VALID_SESSIONS);
-        
-        const combinedSessions = [...allSessions];
-        const combinedSessionNames = new Set(allSessions.map(s => s.name));
-        const combinedSessionIds = new Set(allSessions.map(s => String(s.id)));
+        const validSessions = importedData.filter(isValidSession);
+        if (validSessions.length === 0) throw new Error(CONSTANTS.MESSAGES.IMPORT_NO_VALID_SESSIONS);
 
-        for (const sessionToImport of valid) {
-            if (combinedSessionIds.has(String(sessionToImport.id))) {
-                sessionToImport.id = generateUniqueId();
-            }
-            
-            let newName = sessionToImport.name;
-            while (combinedSessionNames.has(newName)) {
-                 const match = newName.match(/^(.*) \((\d+)\)$/);
-                 if (match) {
-                     newName = `${match[1]} (${parseInt(match[2], 10) + 1})`;
-                 } else {
-                     newName = `${newName} (2)`;
-                 }
-            }
-            sessionToImport.name = newName;
-            
-            combinedSessions.push(sessionToImport);
-            combinedSessionNames.add(sessionToImport.name);
-            combinedSessionIds.add(String(sessionToImport.id));
-        }
+        allSessions = mergeSessions(allSessions, validSessions);
 
-        allSessions = combinedSessions;
         await storage.set(CONSTANTS.STORAGE_KEYS.SESSIONS, allSessions);
         renderSessions();
-        showToast(CONSTANTS.MESSAGES.createImportSuccessMessage(valid.length));
+        showToast(CONSTANTS.MESSAGES.createImportSuccessMessage(validSessions.length));
       } catch (error) {
         showToast(error.message.startsWith('저장 공간') ? `❌ ${escapeHtml(error.message)}` : CONSTANTS.MESSAGES.IMPORT_INVALID_FORMAT);
       } finally {
@@ -713,26 +606,25 @@ document.addEventListener('DOMContentLoaded', () => {
   const handleSessionAction = async (e) => {
     const btn = e.target.closest('.beos-icon-button');
     if (!btn || btn.disabled) return;
-    const sessionItem = btn.closest('.session-item');
-    if (!sessionItem) return;
-    const sessionId = sessionItem.dataset.sessionId;
-
+    const sessionId = btn.closest('.session-item')?.dataset.sessionId;
+    if (!sessionId) return;
+    
     btn.disabled = true;
     document.body.style.cursor = 'wait';
     try {
-      switch (btn.dataset.action) {
-        case CONSTANTS.ACTIONS.RESTORE: await handleRestoreSession(sessionId); break;
-        case CONSTANTS.ACTIONS.COPY: await handleCopySessionUrls(sessionId); break;
-        case CONSTANTS.ACTIONS.UPDATE: await handleUpdateSession(sessionId); break;
-        case CONSTANTS.ACTIONS.RENAME: await handleRenameSession(sessionId); break;
-        case CONSTANTS.ACTIONS.PIN: await handlePinSession(sessionId); break;
-        case CONSTANTS.ACTIONS.DELETE: await handleDeleteSession(sessionId); break;
-      }
+      const actionMap = {
+        [CONSTANTS.ACTIONS.RESTORE]: handleRestoreSession,
+        [CONSTANTS.ACTIONS.COPY]: handleCopySessionUrls,
+        [CONSTANTS.ACTIONS.UPDATE]: handleUpdateSession,
+        [CONSTANTS.ACTIONS.RENAME]: handleRenameSession,
+        [CONSTANTS.ACTIONS.PIN]: handlePinSession,
+        [CONSTANTS.ACTIONS.DELETE]: handleDeleteSession,
+      };
+      const actionHandler = actionMap[btn.dataset.action];
+      if (actionHandler) await actionHandler(sessionId);
     } finally {
       const stillExistsBtn = document.querySelector(`.session-item[data-session-id="${sessionId}"] [data-action="${btn.dataset.action}"]`);
-      if (stillExistsBtn) {
-        stillExistsBtn.disabled = false;
-      }
+      if (stillExistsBtn) stillExistsBtn.disabled = false;
       document.body.style.cursor = 'default';
     }
   };
@@ -744,31 +636,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const { key, value } = btn.dataset;
     const parsedValue = /^\d+$/.test(value) ? parseInt(value, 10) : value;
     
-    const buttonGroup = btn.parentElement;
-    buttonGroup.querySelector('.active')?.classList.remove('active');
+    btn.parentElement.querySelector('.active')?.classList.remove('active');
     btn.classList.add('active');
     
-    if (key === CONSTANTS.STORAGE_KEYS.DELAY) {
-        selectedDelay = parsedValue;
-    } else if (key === CONSTANTS.STORAGE_KEYS.RESTORE_TARGET) {
-        selectedRestoreTarget = parsedValue;
-    }
+    if (key === CONSTANTS.STORAGE_KEYS.DELAY) selectedDelay = parsedValue;
+    else if (key === CONSTANTS.STORAGE_KEYS.RESTORE_TARGET) selectedRestoreTarget = parsedValue;
 
     try {
-        await storage.set(key, parsedValue);
+      await storage.set(key, parsedValue);
     } catch (err) {
-        showToast(`${CONSTANTS.MESSAGES.OPTIONS_SAVE_FAILED}: ${escapeHtml(err.message)}`);
+      showToast(`${CONSTANTS.MESSAGES.OPTIONS_SAVE_FAILED}: ${escapeHtml(err.message)}`);
     }
   };
 
   const cleanup = () => {
-    if (toastTimeout) clearTimeout(toastTimeout);
-    if (inputDebounce) clearTimeout(inputDebounce);
-    // --- 버그 수정: 팝업이 닫힐 때 '실행 취소' 상태 초기화 ---
+    clearTimeout(toastTimeout);
+    clearTimeout(inputDebounce);
     lastDeletedSession = null;
   };
 
-  // --- 초기화 및 이벤트 리스너 ---
   const initialize = async () => {
     sessionInput.maxLength = CONSTANTS.UI.SESSION_NAME_MAX_LENGTH;
 
@@ -782,38 +668,36 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedRestoreTarget = restoreTarget;
     allSessions = sessions;
     
-    document.querySelectorAll('.delay-btn-group .option-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.value, 10) === selectedDelay));
-    document.querySelectorAll('.restore-target-btn-group .option-btn').forEach(b => b.classList.toggle('active', b.dataset.value === selectedRestoreTarget));
+    document.querySelector(`.delay-btn-group .option-btn[data-value="${selectedDelay}"]`)?.classList.add('active');
+    document.querySelector(`.restore-target-btn-group .option-btn[data-value="${selectedRestoreTarget}"]`)?.classList.add('active');
 
     renderSessions();
     
-    saveBtn.addEventListener('click', async () => {
-        if (saveBtn.disabled) return;
-        saveBtn.disabled = true;
-        document.body.style.cursor = 'wait';
-        try {
-            await handleSaveSession();
-        } finally {
-            saveBtn.disabled = false;
-            document.body.style.cursor = 'default';
-        }
-    });
-    saveCurrentBtn.addEventListener('click', (e) => { e.preventDefault(); saveBtn.click(); });
-    sessionInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
+    const onSaveClick = async () => {
+      if (saveBtn.disabled) return;
+      saveBtn.disabled = true;
+      document.body.style.cursor = 'wait';
+      try { await handleSaveSession(); } 
+      finally { saveBtn.disabled = false; document.body.style.cursor = 'default'; }
+    };
     
-    sessionInput.addEventListener('input', () => {
-      clearTimeout(inputDebounce);
-      inputDebounce = setTimeout(renderSessions, CONSTANTS.UI.SEARCH_DEBOUNCE_TIME);
-    });
-    
+    saveBtn.addEventListener('click', onSaveClick);
+    saveCurrentBtn.addEventListener('click', (e) => { e.preventDefault(); onSaveClick(); });
+    sessionInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); onSaveClick(); } });
+    sessionInput.addEventListener('input', () => { clearTimeout(inputDebounce); inputDebounce = setTimeout(renderSessions, CONSTANTS.UI.SEARCH_DEBOUNCE_TIME); });
     exportBtn.addEventListener('click', (e) => { e.preventDefault(); handleExport(); });
     importBtn.addEventListener('click', (e) => { e.preventDefault(); importFileInput.click(); });
     importFileInput.addEventListener('change', handleImport);
-    
     sessionListEl.addEventListener('click', handleSessionAction);
-    
     delayBtnGroup.addEventListener('click', handleOptionChange);
     restoreTargetBtnGroup.addEventListener('click', handleOptionChange);
+
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === 'local' && changes[CONSTANTS.STORAGE_KEYS.SESSIONS]) {
+        allSessions = changes[CONSTANTS.STORAGE_KEYS.SESSIONS].newValue || [];
+        renderSessions();
+      }
+    });
 
     window.addEventListener('pagehide', cleanup);
   };
