@@ -3,381 +3,355 @@
 <head>
   <meta charset="UTF-8">
   <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline';">
-  <title>TabHaiku</title>
+  <title>탭 하이쿠</title>
   <style>
-    :root {
-      --beos-bg: #c5c5c5;
-      --beos-gray: #dcdcdc;
-      --beos-yellow: #ffcc00;
-      --beos-blue: #3366cc;
-      --beos-text: #000000;
-      --beos-light-bevel: #ffffff;
-      --beos-dark-bevel: #838383;
-      --font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
-      --beos-border-outset: 2px solid;
-      --beos-border-inset: 2px solid;
-    }
+		:root {
+		  /* BeOS Color Palette */
+		  --beos-bg: #c5c5c5;
+		  --beos-gray: #dcdcdc;
+		  --beos-yellow: #ffcc00;
+		  --beos-blue: #3366cc;
+		  --beos-text: #000000;
+		  --beos-light-bevel: #ffffff;
+		  --beos-dark-bevel: #838383;
+		  --font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
+		  
+		  --beos-border-outset: 1px solid;
+		  --beos-border-inset: 1px solid;
+		}
+		*, *::before, *::after { box-sizing: border-box; }
+		body {
+		  font-family: var(--font-family);
+		  background-color: var(--beos-bg);
+		  color: var(--beos-text);
+		  margin: 0;
+		  width: 400px;
+		  font-size: 12px;
+		  /* Main window has a thicker border */
+		  border: 2px solid;
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  display: flex;
+		  flex-direction: column;
+		  height: 480px; /* 고정 높이 부여 */
+		}
 
-    *, *::before, *::after { box-sizing: border-box; }
+		/* --- REFINED BeOS Window Tab --- */
+		.beos-window-tab {
+		  background-color: var(--beos-bg);
+		  padding: 2px 4px 0 4px; /* Bottom padding removed to allow tab to connect */
+		  display: flex;
+		  align-items: flex-end; /* Align tab to the bottom */
+		  flex-shrink: 0;
+		  position: relative;
+		  border-bottom: 1px solid var(--beos-dark-bevel);
+		}
 
-    body {
-      display: flex;
-      flex-direction: column;
-      width: 400px;
-      height: 480px;
-      margin: 0;
-      background-color: var(--beos-bg);
-      color: var(--beos-text);
-      font-family: var(--font-family);
-      font-size: 12px;
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-    }
+		.beos-window-tab h1 {
+		  background-color: var(--beos-yellow);
+		  font-size: 14px;
+		  font-weight: bold;
+		  margin: 0;
+		  padding: 3px 24px 3px 24px; /* Adjusted padding for button */
+		  position: relative;
+		  border-top: 1px solid var(--beos-light-bevel);
+		  border-left: 1px solid var(--beos-light-bevel);
+		  border-right: 1px solid var(--beos-dark-bevel);
+		  border-bottom: 2px solid var(--beos-text); /* Thick bottom border */
+		  display: flex; /* To center the button vertically */
+		  align-items: center;
+		}
 
-    .beos-window-tab {
-      display: flex;
-      align-items: flex-end;
-      flex-shrink: 0;
-      padding: 2px 4px 0;
-      border-bottom: 1px solid var(--beos-dark-bevel);
-    }
+		/* The decorative close button */
+		.beos-close-button {
+		  position: absolute;
+		  left: 6px;
+		  top: 50%;
+		  transform: translateY(-50%);
+		  width: 12px;
+		  height: 12px;
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		}
+		
+		/* BeOS Menu Bar */
+		.beos-menu-bar {
+		  display: flex;
+		  background-color: var(--beos-bg);
+		  padding: 2px 4px;
+		  border-bottom: 1px solid var(--beos-dark-bevel);
+		  flex-shrink: 0;
+		}
+		.menu-item {
+		  position: relative;
+		  padding: 4px 8px;
+		  cursor: default;
+		}
+		.menu-item:hover {
+		  background-color: var(--beos-blue);
+		  color: white;
+		}
+		.menu-item .dropdown-content {
+		  display: none;
+		  position: absolute;
+		  left: 0;
+		  top: 100%;
+		  background-color: var(--beos-bg);
+		  min-width: 160px;
+		  border: 2px solid;
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  z-index: 100;
+		  box-shadow: none; 
+		}
+		.menu-item:hover .dropdown-content { display: block; }
+		.dropdown-content a {
+		  color: black;
+		  padding: 6px 10px;
+		  text-decoration: none;
+		  display: flex;
+		  align-items: center;
+		  gap: 8px;
+		}
+		.dropdown-content a:hover {
+		  background-color: var(--beos-blue);
+		  color: white;
+		}
+		.dropdown-content hr {
+		  border: 0;
+		  border-top: 1px solid var(--beos-dark-bevel);
+		  margin: 2px 0;
+		}
 
-    .beos-window-tab h1 {
-      display: flex;
-      align-items: center;
-      position: relative;
-      margin: 0;
-      padding: 3px 24px;
-      background-color: var(--beos-yellow);
-      font-size: 14px;
-      font-weight: bold;
-      border-top: 1px solid var(--beos-light-bevel);
-      border-left: 1px solid var(--beos-light-bevel);
-      border-right: 1px solid var(--beos-dark-bevel);
-      border-bottom: 2px solid var(--beos-text);
-    }
+		/* --- Reverted Option Menu Styles --- */
+		.dropdown-content .option-group { padding: 4px 10px; }
+		.dropdown-content .option-group .group-label { font-size: 10px; color: #555; margin-bottom: 4px; }
+		.option-btn-group { display: flex; gap: 2px; }
+		.option-btn {
+		  flex: 1;
+		  padding: 2px 4px;
+		  font-size: 10px;
+		  background-color: var(--beos-gray);
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  cursor: pointer;
+		}
+		.option-btn.active {
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  background-color: #a0a0a0;
+		}
 
-    .beos-close-button {
-      position: absolute;
-      left: 6px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 12px;
-      height: 12px;
-      border: 1px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-    }
+		/* Main Container */
+		.container { 
+		  padding: 0; 
+		  flex-grow: 1; 
+		  display: flex; 
+		  flex-direction: column;
+		  min-height: 0; 
+		}
 
-    .beos-menu-bar {
-      display: flex;
-      flex-shrink: 0;
-      padding: 2px 4px;
-      background-color: var(--beos-bg);
-      border-bottom: 1px solid var(--beos-dark-bevel);
-    }
+		/* Controls Bar */
+		.controls-bar {
+		  display: flex;
+		  gap: 4px;
+		  margin: 8px 8px 8px;
+		}
+		#session-input {
+		  flex-grow: 1;
+		  min-width: 0;
+		}
 
-    .menu-item {
-      position: relative;
-      padding: 4px 8px;
-      cursor: default;
-    }
+		/* BeOS Controls Styling */
+		.beos-button, .beos-input {
+		  background-color: var(--beos-gray);
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  padding: 5px 8px;
+		  font-family: var(--font-family);
+		  font-size: 12px;
+		}
+		.beos-button {
+		  cursor: pointer;
+		  display: flex;
+		  align-items: center;
+		  justify-content: center;
+		  gap: 6px;
+		  flex-shrink: 0;
+		}
+		/* --- 버그 수정: :disabled 상태를 :active와 분리 --- */
+		.beos-button:active {
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  padding: 6px 7px 4px 9px; /* Shifting content for pressed effect */
+		}
+		.beos-button:disabled {
+		  color: var(--beos-dark-bevel);
+		  cursor: wait;
+		}
+		.beos-input {
+		  width: 100%;
+		  border: var(--beos-border-inset);
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		}
+		.beos-input:focus {
+		  outline: 2px solid var(--beos-blue);
+		  outline-offset: -2px;
+		}
+		.beos-emoji-icon {
+		  display: inline-block;
+		  font-size: 14px; /* Emoji size */
+		  line-height: 1;
+		}
 
-    .menu-item:hover {
-      background-color: var(--beos-blue);
-      color: white;
-    }
+		/* Session List Styling */
+		#session-list-container {
+		  flex-grow: 1;
+		  min-height: 0;
+		  border: var(--beos-border-inset);
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  background-color: #fff;
+		  padding: 2px;
+		  overflow-y: auto;
+		  margin: 0 8px 8px;
+		}
+		#session-list {
+		  list-style: none; padding: 0; margin: 0;
+		}
+		.session-item { padding: 6px; }
+		.session-item:hover {
+		  background-color: var(--beos-blue);
+		  color: white;
+		}
+		/* Ensure child element colors change on hover too */
+		.session-item:hover .session-meta { color: #e0e0e0; }
+		.session-item:hover .beos-icon-button { color: white; }
 
-    .menu-item .dropdown-content {
-      display: none;
-      position: absolute;
-      left: 0;
-      top: 100%;
-      min-width: 160px;
-      background-color: var(--beos-bg);
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      z-index: 100;
-    }
+        /* --- 기능 개선: 고정된 세션 스타일 --- */
+		.session-item.pinned {
+          background-color: #fdfbe8; /* 은은한 노란색 배경 */
+        }
+        .session-item.pinned:hover {
+          background-color: var(--beos-blue); /* 호버 스타일은 유지 */
+        }
+        .session-item.pinned .session-name::before {
+          content: '📍';
+          margin-right: 6px;
+        }
 
-    .menu-item:hover .dropdown-content { display: block; }
+		.session-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+		.session-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-width: 0; }
+		.session-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+		.session-meta { font-size: 10px; color: #555; }
+		.session-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+		.beos-icon-button {
+		  background: none; border: none; padding: 2px; cursor: pointer;
+		  font-size: 14px; 
+		  line-height: 1;
+		  color: var(--beos-text);
+		}
+		.beos-icon-button:active {
+		  border: var(--beos-border-inset);
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  background-color: #b0b0b0;
+		}
+		.beos-icon-button:disabled {
+		  color: var(--beos-dark-bevel);
+		  cursor: wait;
+		}
 
-    .dropdown-content a {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 10px;
-      color: black;
-      text-decoration: none;
-    }
+		.session-details { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dotted var(--beos-dark-bevel); }
+		.session-details-list { list-style: none; padding: 0 0 0 8px; margin: 0; max-height: 120px; overflow-y: auto; }
+		.session-details-list li { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-    .dropdown-content a:hover {
-      background-color: var(--beos-blue);
-      color: white;
-    }
-    
-    .dropdown-content hr {
-      margin: 2px 0;
-      border: 0;
-      border-top: 1px solid var(--beos-dark-bevel);
-    }
+		/* Custom Scrollbar */
+		::-webkit-scrollbar { width: 14px; }
+		::-webkit-scrollbar-track { background: var(--beos-gray); }
+		::-webkit-scrollbar-thumb { 
+		  background: var(--beos-bg); 
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		}
+		::-webkit-scrollbar-button { 
+		  background: var(--beos-bg); 
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  height: 14px; 
+		  width: 14px;
+		  display: block;
+		}
 
-    .dropdown-content .option-group { padding: 4px 10px; }
-    .dropdown-content .option-group .group-label { font-size: 10px; color: #555; margin-bottom: 4px; }
-
-    .option-btn-group { display: flex; gap: 2px; }
-    .option-btn {
-      flex: 1;
-      padding: 2px 4px;
-      font-size: 10px;
-      background-color: var(--beos-gray);
-      border: 1px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      cursor: pointer;
-    }
-    .option-btn.active {
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-      background-color: #a0a0a0;
-    }
-
-    .container { 
-      display: flex; 
-      flex-direction: column;
-      flex-grow: 1; 
-      min-height: 0; 
-      padding: 0; 
-    }
-
-    .controls-bar {
-      display: flex;
-      gap: 4px;
-      margin: 8px;
-    }
-    
-    #session-input {
-      flex-grow: 1;
-      min-width: 0;
-    }
-
-    .beos-button, .beos-input {
-      padding: 5px 8px;
-      background-color: var(--beos-gray);
-      border: 1px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      font-family: var(--font-family);
-      font-size: 12px;
-    }
-
-    .beos-button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      flex-shrink: 0;
-      cursor: pointer;
-    }
-
-    .beos-button:active {
-      padding: 6px 7px 4px 9px;
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-    }
-    .beos-button:disabled {
-      color: var(--beos-dark-bevel);
-      cursor: wait;
-    }
-
-    .beos-input {
-      width: 100%;
-      border: 1px solid;
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-    }
-    .beos-input:focus {
-      outline: 2px solid var(--beos-blue);
-      outline-offset: -2px;
-    }
-
-    .beos-emoji-icon {
-      display: inline-block;
-      font-size: 14px;
-      line-height: 1;
-    }
-
-    #session-list-container {
-      flex-grow: 1;
-      min-height: 0;
-      margin: 0 8px 8px;
-      padding: 2px;
-      background-color: #fff;
-      border: var(--beos-border-inset);
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-      overflow-y: auto;
-    }
-
-    #session-list {
-      list-style: none; 
-      padding: 0; 
-      margin: 0;
-    }
-
-    .session-item { padding: 6px; }
-    .session-item:hover {
-      background-color: var(--beos-blue);
-      color: white;
-    }
-    .session-item:hover .session-meta { color: #e0e0e0; }
-    .session-item:hover .beos-icon-button { color: white; }
-    
-    .session-item.pinned { background-color: #fdfbe8; }
-    .session-item.pinned:hover { background-color: var(--beos-blue); }
-    .session-item.pinned .session-name::before {
-      content: '📍';
-      margin-right: 6px;
-    }
-
-    .session-header { 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      cursor: pointer; 
-    }
-
-    .session-info { 
-      display: flex; 
-      flex-direction: column; 
-      gap: 2px; 
-      overflow: hidden; 
-      min-width: 0; 
-    }
-
-    .session-name { 
-      font-weight: bold; 
-      white-space: nowrap; 
-      overflow: hidden; 
-      text-overflow: ellipsis; 
-    }
-
-    .session-meta { font-size: 10px; color: #555; }
-    .session-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
-
-    .beos-icon-button {
-      padding: 2px;
-      background: none; 
-      border: none; 
-      color: var(--beos-text);
-      font-size: 14px; 
-      line-height: 1;
-      cursor: pointer;
-    }
-    .beos-icon-button:active {
-      background-color: #b0b0b0;
-      border: 1px solid;
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-    }
-    .beos-icon-button:disabled {
-      color: var(--beos-dark-bevel);
-      cursor: wait;
-    }
-
-    .session-details { 
-      display: none; 
-      margin-top: 6px; 
-      padding-top: 6px; 
-      border-top: 1px dotted var(--beos-dark-bevel); 
-    }
-
-    .session-details-list { 
-      list-style: none; 
-      padding: 0 0 0 8px; 
-      margin: 0; 
-      max-height: 120px; 
-      overflow-y: auto; 
-    }
-
-    .session-details-list li { 
-      padding: 2px 0; 
-      white-space: nowrap; 
-      overflow: hidden; 
-      text-overflow: ellipsis; 
-    }
-
-    ::-webkit-scrollbar { width: 14px; }
-    ::-webkit-scrollbar-track { background: var(--beos-gray); }
-    ::-webkit-scrollbar-thumb { 
-      background: var(--beos-bg); 
-      border: 1px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-    }
-    ::-webkit-scrollbar-button { 
-      display: block;
-      width: 14px;
-      height: 14px; 
-      background: var(--beos-bg); 
-      border: 1px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-    }
-
-    #toast {
-      position: fixed;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 8px 12px;
-      background-color: var(--beos-bg);
-      color: var(--beos-text);
-      border: var(--beos-border-outset);
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      font-size: 12px;
-      z-index: 999;
-      opacity: 0;
-      visibility: hidden;
-      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0s 0.3s;
-    }
-
-    #toast.show {
-      transform: translate(-50%, 0);
-      opacity: 1;
-      visibility: visible;
-      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out, visibility 0s 0s;
-    }
-
-    .toast-undo-btn {
-      flex-shrink: 0;
-      padding: 2px 8px;
-      background-color: var(--beos-gray);
-      border: 1px solid;
-      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      font-family: var(--font-family);
-      font-size: 11px;
-      cursor: pointer;
-    }
-
-    .toast-undo-btn:active {
-      padding: 3px 7px 1px 9px;
-      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
-    }
+		/* Toast - 잔상 문제 해결 및 디자인 개선 */
+		#toast {
+		  position: fixed;
+		  bottom: -60px; /* 더 확실히 숨기기 위해 값 증가 */
+		  left: 50%;
+		  transform: translateX(-50%);
+		  background-color: var(--beos-bg);
+		  color: var(--beos-text);
+		  padding: 8px 12px;
+		  font-size: 12px;
+		  z-index: 999;
+		  border: 2px solid;
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  box-shadow: none;
+		  display: flex;
+		  align-items: center;
+		  gap: 12px;
+		  opacity: 0;
+		  visibility: hidden;
+		  transition: bottom 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0s 0.3s;
+		}
+		#toast.show {
+		  bottom: 10px;
+		  opacity: 1;
+		  visibility: visible;
+		  transition: bottom 0.3s ease-in-out, opacity 0.3s ease-in-out, visibility 0s 0s;
+		}
+		
+		/* BeOS 스타일의 실행 취소 버튼 */
+		.toast-undo-btn {
+		  background-color: var(--beos-gray);
+		  border: var(--beos-border-outset);
+		  border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+		  padding: 2px 8px;
+		  font-family: var(--font-family);
+		  font-size: 11px;
+		  cursor: pointer;
+		  flex-shrink: 0; /* 버튼 크기가 줄어들지 않도록 설정 */
+		}
+		.toast-undo-btn:active {
+		  border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+		  padding: 3px 7px 1px 9px; /* 눌리는 효과 */
+		}
+  
   </style>
 </head>
 <body>
-  <header class="beos-window-tab">
+
+  <div class="beos-window-tab">
     <h1>
       <div class="beos-close-button"></div>
-      TabHaiku
+      탭 하이쿠
     </h1>
-  </header>
+  </div>
   
-  <nav class="beos-menu-bar">
-    <div class="menu-item" role="button" aria-haspopup="true">
+  <div class="beos-menu-bar">
+    <div class="menu-item">
       <span>세션</span>
       <div class="dropdown-content">
-        <a href="#" id="save-current-btn"><span class="beos-emoji-icon">💾</span>현재 탭 저장...</a>
+        <a href="#" id="save-current-btn">
+          <span class="beos-emoji-icon">💾</span>
+          현재 탭 저장...
+        </a>
         <hr>
-        <a href="#" id="import-btn"><span class="beos-emoji-icon">📥</span>가져오기 (.json)</a>
-        <a href="#" id="export-btn"><span class="beos-emoji-icon">📤</span>모두 내보내기</a>
+        <a href="#" id="import-btn">
+          <span class="beos-emoji-icon">📥</span>
+          가져오기 (.json)
+        </a>
+        <a href="#" id="export-btn">
+          <span class="beos-emoji-icon">📤</span>
+          모두 내보내기
+        </a>
       </div>
     </div>
-    <div class="menu-item" role="button" aria-haspopup="true">
+    <div class="menu-item">
       <span>옵션</span>
       <div class="dropdown-content">
         <div class="option-group">
@@ -399,37 +373,42 @@
         </div>
       </div>
     </div>
-  </nav>
-
-  <main class="container">
+  </div>
+  
+  <div class="container">
     <div class="controls-bar">
-      <input type="text" id="session-input" class="beos-input" placeholder="이름을 정해서 새 세션 저장 또는 검색" maxlength="200">
-      <button id="save-session-btn" class="beos-button"><span class="beos-emoji-icon">💾</span>저장</button>
+      <input type="text" id="session-input" class="beos-input" placeholder="이름을 정해서 새 세션 저장 또는 검색 " maxlength="200">
+      <button id="save-session-btn" class="beos-button">
+        <span class="beos-emoji-icon">💾</span>
+        저장
+      </button>
     </div>
+    
     <div id="session-list-container">
-      <ul id="session-list" role="list"></ul>
+      <ul id="session-list"></ul>
     </div>
-  </main>
+  </div>
 
-  <input type="file" id="import-file-input" hidden accept=".json">
-  <div id="toast" role="status" aria-live="polite"></div>
+  <input type="file" id="import-file-input" style="display: none;" accept=".json">
+  <div id="toast"></div>
 
   <template id="session-item-template">
-    <li class="session-item" role="listitem">
+    <li class="session-item">
       <div class="session-header">
         <div class="session-info">
           <span class="session-name"></span>
+          <!-- 레이아웃 변경: 날짜와 탭/그룹 수를 다른 줄에 표시 -->
           <span class="session-meta session-meta-date"></span>
           <span class="session-meta session-meta-count"></span>
         </div>
         <div class="session-actions"></div>
       </div>
-      <div class="session-details" hidden>
-        <ul class="session-details-list" role="list"></ul>
+      <div class="session-details" style="display: none;">
+        <ul class="session-details-list"></ul>
       </div>
     </li>
   </template>
 
-  <script src="popup.js"></script>
 </body>
+<script src="popup.js"></script>
 </html>
