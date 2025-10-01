@@ -16,8 +16,8 @@
       --beos-dark-bevel: #838383;
       --font-family: 'Menlo', 'Consolas', 'Monaco', monospace;
       
-      --beos-border-outset: 2px solid;
-      --beos-border-inset: 2px solid;
+      --beos-border-outset: 1px solid;
+      --beos-border-inset: 1px solid;
     }
     *, *::before, *::after { box-sizing: border-box; }
     body {
@@ -27,7 +27,8 @@
       margin: 0;
       width: 380px;
       font-size: 12px;
-      border: var(--beos-border-outset);
+      /* Main window has a thicker border */
+      border: 2px solid;
       border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
       display: flex;
       flex-direction: column;
@@ -36,16 +37,40 @@
 
     /* BeOS Window Elements */
     .beos-window-tab {
-      background-color: var(--beos-yellow);
-      padding: 4px 8px;
-      border-bottom: 2px solid var(--beos-text);
+      background-color: var(--beos-bg);
+      padding: 2px 4px; /* Adjusted padding as the standalone button is removed */
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      font-weight: bold;
       flex-shrink: 0;
+      position: relative;
+      border-bottom: 1px solid var(--beos-dark-bevel);
     }
-    .beos-window-tab h1 { font-size: 14px; margin: 0; }
+    /* DELETED: The standalone ::before pseudo-element for the far-left button is removed. */
+
+    .beos-window-tab h1 {
+      background-color: var(--beos-yellow);
+      font-size: 14px;
+      font-weight: bold;
+      margin: 0;
+      padding: 3px 24px 3px 40px; /* REVISED: Padding adjusted for the button on the left */
+      position: relative;
+      border-top: 1px solid var(--beos-light-bevel);
+      border-left: 1px solid var(--beos-light-bevel);
+      border-right: 1px solid var(--beos-dark-bevel);
+      border-bottom: 2px solid var(--beos-text); /* Thick bottom border */
+    }
+    /* Decorative BeOS-style button (MOVED to the front of the text) */
+    .beos-window-tab h1::before { /* CHANGED: from ::after to ::before */
+      content: '';
+      position: absolute;
+      left: 6px; /* CHANGED: from right to left */
+      top: 50%;
+      transform: translateY(-50%);
+      width: 12px;
+      height: 12px;
+      border: var(--beos-border-outset);
+      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+    }
     
     /* BeOS Menu Bar */
     .beos-menu-bar {
@@ -71,7 +96,7 @@
       top: 100%;
       background-color: var(--beos-bg);
       min-width: 160px;
-      border: var(--beos-border-outset);
+      border: 2px solid; /* Dropdown menu has thicker border */
       border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
       z-index: 100;
       box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
@@ -130,7 +155,7 @@
       background-color: var(--beos-gray);
       border: var(--beos-border-outset);
       border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      padding: 6px 10px;
+      padding: 5px 8px; /* Adjusted padding for 1px border */
       font-family: var(--font-family);
       font-size: 12px;
     }
@@ -144,6 +169,7 @@
     }
     .beos-button:active {
       border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+      padding: 6px 7px 4px 9px; /* Shifting content for pressed effect */
     }
     .beos-input {
       width: 100%;
@@ -175,7 +201,14 @@
       overflow-y: auto;
     }
     .session-item { padding: 6px; }
-    .session-item:hover { background-color: #e0e0e0; }
+    .session-item:hover {
+      background-color: var(--beos-blue);
+      color: white;
+    }
+    /* Ensure child element colors change on hover too */
+    .session-item:hover .session-meta { color: #e0e0e0; }
+    .session-item:hover .beos-icon-button { color: white; }
+
     .session-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
     .session-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; min-width: 0; }
     .session-name { font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -185,9 +218,12 @@
       background: none; border: none; padding: 2px; cursor: pointer;
       font-size: 16px; /* Emoji button size */
       line-height: 1;
+      color: var(--beos-text);
     }
-    .beos-icon-button:hover {
-      transform: scale(1.1); /* [REVISED] Hover effect for whole button */
+    .beos-icon-button:active {
+      border: var(--beos-border-inset);
+      border-color: var(--beos-dark-bevel) var(--beos-light-bevel) var(--beos-light-bevel) var(--beos-dark-bevel);
+      background-color: #b0b0b0;
     }
     
     .session-details { display: none; margin-top: 6px; padding-top: 6px; border-top: 1px dotted var(--beos-dark-bevel); }
@@ -195,28 +231,33 @@
     .session-details-list li { padding: 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 16px; }
-    ::-webkit-scrollbar-track { background: #aaa; }
+    ::-webkit-scrollbar { width: 14px; }
+    ::-webkit-scrollbar-track { background: var(--beos-gray); }
     ::-webkit-scrollbar-thumb { 
-      background: var(--beos-gray); 
+      background: var(--beos-bg); 
       border: var(--beos-border-outset);
       border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
     }
     ::-webkit-scrollbar-button { 
-      background: var(--beos-gray); 
+      background: var(--beos-bg); 
       border: var(--beos-border-outset);
       border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
-      height: 16px; 
+      height: 14px; 
+      width: 14px;
+      display: block;
     }
-    ::-webkit-scrollbar-button:start:decrement { background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black"><path d="M8 4l-4 4h8z"/></svg>'); }
-    ::-webkit-scrollbar-button:end:increment { background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black"><path d="M8 12l4-4H4z"/></svg>'); }
+    ::-webkit-scrollbar-button:start:decrement { background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black"><path d="M8 5l-4 4h8z"/></svg>'); background-repeat: no-repeat; background-position: center; }
+    ::-webkit-scrollbar-button:end:increment { background-image: url('data:image/svg+xml;charset=utf-8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="black"><path d="M8 11l4-4H4z"/></svg>'); background-repeat: no-repeat; background-position: center; }
 
     /* Toast */
     #toast {
       position: fixed; bottom: -50px; left: 50%; transform: translateX(-50%);
-      background-color: var(--beos-text); color: var(--beos-yellow);
+      background-color: var(--beos-bg); color: var(--beos-text);
       padding: 8px 12px; font-size: 12px; transition: bottom 0.3s ease-in-out;
-      z-index: 999; border: 2px solid var(--beos-dark-bevel);
+      z-index: 999; 
+      border: 2px solid;
+      border-color: var(--beos-light-bevel) var(--beos-dark-bevel) var(--beos-dark-bevel) var(--beos-light-bevel);
+      box-shadow: 2px 2px 0px rgba(0,0,0,0.3);
     }
     #toast.show { bottom: 10px; }
   </style>
