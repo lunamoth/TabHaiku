@@ -1,5 +1,3 @@
---- START OF FILE popup.js ---
-
 document.addEventListener('DOMContentLoaded', () => {
 
   const CONSTANTS = {
