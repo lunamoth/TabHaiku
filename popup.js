@@ -1,8 +1,10 @@
+--- START OF FILE popup.js ---
+
 document.addEventListener('DOMContentLoaded', () => {
 
   const CONSTANTS = {
     UI: {
-      TOAST_DURATION: 4000, // 실행 취소를 위해 시간 약간 늘림
+      TOAST_DURATION: 4000,
       SESSION_NAME_MAX_LENGTH: 200,
       SEARCH_DEBOUNCE_TIME: 200,
     },
@@ -10,7 +12,6 @@ document.addEventListener('DOMContentLoaded', () => {
       SESSION_PREFIX: '',
     },
     PROTOCOLS: {
-      // --- 버그 수정: 따옴표 위치 오류 수정 ---
       SAFE: ['http:', 'https:'],
     },
     TIMING: {
@@ -44,7 +45,7 @@ document.addEventListener('DOMContentLoaded', () => {
       SESSION_NOT_FOUND: '⚠️ 세션을 찾을 수 없습니다.',
       SESSION_RESTORE_FAILED: '⚠️ 탭 복원에 실패했습니다.',
       SESSION_RESTORE_ERROR: '❌ 세션 복원 중 오류가 발생했습니다.',
-      SESSION_DELETED: '🗑️ 세션을 삭제했습니다.',
+      createSessionDeletedMessage: (name) => `🗑️ '${escapeHtml(name)}' 세션을 삭제했습니다.`,
       SESSION_RESTORED: '✅ 세션을 복원했습니다.',
       DELETE_FAILED: '삭제 실패',
       NAME_CANNOT_BE_EMPTY: '⚠️ 이름은 비워둘 수 없습니다.',
@@ -63,7 +64,6 @@ document.addEventListener('DOMContentLoaded', () => {
       IMPORT_NO_VALID_SESSIONS: '유효한 세션이 없습니다.',
       OPTIONS_SAVE_FAILED: '❌ 옵션 저장 실패',
       
-      // --- 코드 최적화: 함수형 메시지 이름 명확화 ---
       createDuplicateNameWarning: (name) => `⚠️ 중복된 이름입니다. '${name}'(으)로 저장합니다.`,
       createSessionUpdatedMessage: (name) => `🔄 '${escapeHtml(name)}' 세션을 업데이트했습니다.`,
       createSessionSavedMessage: (name) => `💾 '${escapeHtml(name)}' 세션을 저장했습니다.`,
@@ -98,9 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let selectedDelay = 0;
   let selectedRestoreTarget;
   let inputDebounce;
-  let lastDeletedSession = null;
 
-  // --- Chrome API 추상화 (단순화됨) ---
   const storage = {
     get: async (key, defaultValue = []) => {
       const result = await chrome.storage.local.get(key);
@@ -135,13 +133,12 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${datePart} ${timePart}`;
   };
 
-  // --- 보안 강화: innerHTML 대신 textContent를 사용하여 XSS 방지 ---
   const showToast = (message, duration = CONSTANTS.UI.TOAST_DURATION, undoCallback = null) => {
     clearTimeout(toastTimeout);
-    toastEl.innerHTML = ''; // 자식 요소 모두 제거
+    toastEl.innerHTML = '';
     
     const messageSpan = document.createElement('span');
-    messageSpan.textContent = message; // textContent로 안전하게 텍스트 설정
+    messageSpan.textContent = message;
     toastEl.appendChild(messageSpan);
 
     if (undoCallback) {
@@ -159,9 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
     toastEl.classList.add('show');
     toastTimeout = setTimeout(() => {
         toastEl.classList.remove('show');
-        if (undoCallback) {
-            lastDeletedSession = null;
-        }
     }, duration);
   };
   
@@ -198,6 +192,17 @@ document.addEventListener('DOMContentLoaded', () => {
   const generateUniqueId = () => `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   const findSessionById = (id) => allSessions.find(s => String(s.id) === String(id));
   const findSessionIndexById = (id) => allSessions.findIndex(s => String(s.id) === String(id));
+  
+  // ▼▼▼ [수정됨] 세션 탐색 및 오류 처리 로직 중앙화 ▼▼▼
+  const findSessionDataOrShowError = (id) => {
+    const index = findSessionIndexById(id);
+    if (index === -1) {
+      showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
+      return null;
+    }
+    return { session: allSessions[index], index };
+  };
+  // ▲▲▲ [수정됨] ▲▲▲
 
   const getSessionTimestamp = (session) => {
     const id = session.id;
@@ -211,6 +216,25 @@ document.addEventListener('DOMContentLoaded', () => {
     button.title = title;
     button.textContent = icon;
     return button;
+  };
+
+  const withLoadingState = async (elements, asyncFunc) => {
+    const elementsArray = Array.isArray(elements) || elements instanceof NodeList ? Array.from(elements) : [elements];
+
+    if (elementsArray.some(el => !el || el.disabled)) return;
+
+    elementsArray.forEach(el => el.disabled = true);
+    document.body.style.cursor = 'wait';
+    try {
+      await asyncFunc();
+    } finally {
+      elementsArray.forEach(el => {
+        if (document.body.contains(el)) {
+          el.disabled = false;
+        }
+      });
+      document.body.style.cursor = 'default';
+    }
   };
 
   // --- UI 렌더링 ---
@@ -251,7 +275,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const item = sessionItemTemplate.content.cloneNode(true).firstElementChild;
     item.dataset.sessionId = session.id;
 
-    // --- 기능 개선: 고정된 세션에 'pinned' 클래스 추가 ---
     if (session.isPinned) {
       item.classList.add('pinned');
     }
@@ -267,7 +290,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     const sessionActions = item.querySelector('.session-actions');
     
-    // --- 코드 개선: 액션 버튼 생성 로직을 배열 기반으로 변경하여 가독성 및 유지보수성 향상 ---
     const actions = [
       { action: CONSTANTS.ACTIONS.RESTORE, title: '복원(열기)', icon: '🚀' },
       { action: CONSTANTS.ACTIONS.COPY, title: 'URL 복사', icon: '📋' },
@@ -301,15 +323,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 핵심 로직 ---
 
-  const updateAndSaveSessions = async (updateFunction, { successMessage, errorMessagePrefix }) => {
+  const updateAndSaveSessions = async (updateFunction, { errorMessagePrefix }) => {
     const originalSessions = JSON.parse(JSON.stringify(allSessions));
     try {
-        const proceed = await updateFunction();
-        if (proceed === false) return;
+        const successMessage = await updateFunction();
+        if (successMessage === null) return; 
+        
         await storage.set(CONSTANTS.STORAGE_KEYS.SESSIONS, allSessions);
         renderSessions();
-        const finalSuccessMessage = typeof successMessage === 'function' ? successMessage() : successMessage;
-        if (finalSuccessMessage) showToast(finalSuccessMessage);
+        if (successMessage) showToast(successMessage);
     } catch (e) {
         allSessions = originalSessions;
         renderSessions();
@@ -360,31 +382,27 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    let successMessage;
-
     await updateAndSaveSessions(
       () => {
         if (overwriteId) {
           const sessionIndex = allSessions.findIndex(s => String(s.id) === String(overwriteId));
           if (sessionIndex === -1) {
             showToast(CONSTANTS.MESSAGES.UPDATE_SESSION_NOT_FOUND);
-            return false; 
+            return null;
           }
           const name = overwriteName;
           allSessions[sessionIndex] = { ...allSessions[sessionIndex], tabs: tabs, name: name };
-          successMessage = CONSTANTS.MESSAGES.createSessionUpdatedMessage(name);
+          return CONSTANTS.MESSAGES.createSessionUpdatedMessage(name);
         } else {
           let name = sessionInput.value.trim();
           if (!name) name = `${CONSTANTS.DEFAULTS.SESSION_PREFIX} ${formatDate(Date.now())}`;
           name = generateUniqueSessionName(name);
           allSessions.push({ id: generateUniqueId(), name, tabs, isPinned: false });
-          successMessage = CONSTANTS.MESSAGES.createSessionSavedMessage(name);
           sessionInput.value = '';
+          return CONSTANTS.MESSAGES.createSessionSavedMessage(name);
         }
-        return true;
       },
       {
-        get successMessage() { return successMessage; },
         errorMessagePrefix: CONSTANTS.MESSAGES.SESSION_SAVE_FAILED
       }
     );
@@ -437,12 +455,17 @@ document.addEventListener('DOMContentLoaded', () => {
       if (group.tabIds.length === 0) continue;
       try {
         const newGroupId = await chrome.tabs.group({ tabIds: group.tabIds, createProperties: { windowId: targetWindowId } });
-        const updateProperties = { title: group.info.title, color: group.info.color };
-        if (typeof group.info.collapsed === 'boolean') {
-            updateProperties.collapsed = group.info.collapsed;
+        const updateProperties = {
+          title: group.info?.title || 'Group',
+          color: group.info?.color || 'grey'
+        };
+        if (typeof group.info?.collapsed === 'boolean') {
+          updateProperties.collapsed = group.info.collapsed;
         }
         await chrome.tabGroups.update(newGroupId, updateProperties);
-      } catch (e) {}
+      } catch (e) {
+        console.warn('TabHaiku: 탭 그룹 생성 또는 업데이트에 실패했습니다.', e);
+      }
     }
   };
 
@@ -477,7 +500,6 @@ document.addEventListener('DOMContentLoaded', () => {
       const validCreatedTabs = createdTabs.filter(Boolean);
 
       if (validCreatedTabs.length === 0 && selectedRestoreTarget === CONSTANTS.RESTORE_TARGETS.NEW_WINDOW && initialTabId) {
-          // If no tabs were created in a new window, don't close the initial tab.
           showToast(CONSTANTS.MESSAGES.SESSION_RESTORE_FAILED);
           return;
       }
@@ -499,9 +521,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const session = findSessionById(sessionId);
     if (!session) return;
     
-    if (confirm(CONSTANTS.MESSAGES.createConfirmUpdateMessage(session.name))) {
-      await handleSaveSession(sessionId, session.name);
+    if (!confirm(CONSTANTS.MESSAGES.createConfirmUpdateMessage(session.name))) {
+      return;
     }
+    await handleSaveSession(sessionId, session.name);
   };
 
   const handleDeleteSession = async (sessionId) => {
@@ -509,8 +532,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (sessionIndex === -1) return;
 
     const sessionToDelete = allSessions[sessionIndex];
-    lastDeletedSession = { session: sessionToDelete, index: sessionIndex };
-
+    
     allSessions.splice(sessionIndex, 1);
     
     try {
@@ -518,8 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSessions();
 
         const undoCallback = async () => {
-            if (!lastDeletedSession) return;
-            allSessions.splice(lastDeletedSession.index, 0, lastDeletedSession.session);
+            allSessions.push(sessionToDelete);
             try {
                 await storage.set(CONSTANTS.STORAGE_KEYS.SESSIONS, allSessions);
                 renderSessions();
@@ -527,25 +548,26 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (e) {
                 showToast(`❌ 복원 실패: ${escapeHtml(e.message)}`);
             }
-            lastDeletedSession = null;
         };
-        showToast(CONSTANTS.MESSAGES.SESSION_DELETED, CONSTANTS.UI.TOAST_DURATION, undoCallback);
+
+        showToast(
+            CONSTANTS.MESSAGES.createSessionDeletedMessage(sessionToDelete.name), 
+            CONSTANTS.UI.TOAST_DURATION, 
+            undoCallback
+        );
     } catch (e) {
         allSessions.splice(sessionIndex, 0, sessionToDelete);
-        lastDeletedSession = null;
         renderSessions();
         showToast(`❌ ${CONSTANTS.MESSAGES.DELETE_FAILED}: ${escapeHtml(e.message)}`);
     }
   };
   
+  // ▼▼▼ [수정됨] 새 헬퍼 함수를 사용하도록 리팩토링 ▼▼▼
   const handleRenameSession = async (sessionId) => {
-    const sessionIndex = findSessionIndexById(sessionId);
-    if (sessionIndex === -1) {
-        showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
-        return;
-    }
+    const sessionData = findSessionDataOrShowError(sessionId);
+    if (!sessionData) return;
+    const { session, index: sessionIndex } = sessionData;
 
-    const session = allSessions[sessionIndex];
     const originalName = session.name;
     const newName = prompt('새 세션 이름을 입력하세요:', originalName);
 
@@ -569,42 +591,44 @@ document.addEventListener('DOMContentLoaded', () => {
     await updateAndSaveSessions(
         () => {
             allSessions[sessionIndex].name = trimmedNewName;
-            return true;
+            return CONSTANTS.MESSAGES.createNameChangedMessage(trimmedNewName);
         },
         {
-            successMessage: CONSTANTS.MESSAGES.createNameChangedMessage(trimmedNewName),
             errorMessagePrefix: CONSTANTS.MESSAGES.RENAME_FAILED
         }
     );
-  };
 
-  const handlePinSession = async (sessionId) => {
-    const sessionIndex = findSessionIndexById(sessionId);
-    if (sessionIndex === -1) {
-      showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
-      return;
+    if (sessionInput.value.trim()) {
+      sessionInput.value = '';
+      renderSessions();
     }
+  };
+  // ▲▲▲ [수정됨] ▲▲▲
 
-    let isNowPinned;
+  // ▼▼▼ [수정됨] 새 헬퍼 함수를 사용하도록 리팩토링 ▼▼▼
+  const handlePinSession = async (sessionId) => {
+    const sessionData = findSessionDataOrShowError(sessionId);
+    if (!sessionData) return;
+    const { index: sessionIndex } = sessionData;
+    
     await updateAndSaveSessions(
         () => {
-            allSessions[sessionIndex].isPinned = !allSessions[sessionIndex].isPinned;
-            isNowPinned = allSessions[sessionIndex].isPinned;
-            return true;
+            const session = allSessions[sessionIndex];
+            session.isPinned = !session.isPinned;
+            return session.isPinned ? CONSTANTS.MESSAGES.SESSION_PINNED : CONSTANTS.MESSAGES.SESSION_UNPINNED;
         },
         {
-            successMessage: () => isNowPinned ? CONSTANTS.MESSAGES.SESSION_PINNED : CONSTANTS.MESSAGES.SESSION_UNPINNED,
             errorMessagePrefix: CONSTANTS.MESSAGES.PIN_FAILED
         }
     );
   };
+  // ▲▲▲ [수정됨] ▲▲▲
   
+  // ▼▼▼ [수정됨] 새 헬퍼 함수를 사용하도록 리팩토링 ▼▼▼
   const handleCopySessionUrls = async (sessionId) => {
-    const session = findSessionById(sessionId);
-    if (!session) {
-        showToast(CONSTANTS.MESSAGES.SESSION_NOT_FOUND);
-        return;
-    }
+    const sessionData = findSessionDataOrShowError(sessionId);
+    if (!sessionData) return;
+    const { session } = sessionData;
 
     const urlsToCopy = session.tabs.map(tab => tab.url).join('\n');
     if (!urlsToCopy) {
@@ -619,6 +643,7 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(CONSTANTS.MESSAGES.COPY_FAILED);
     }
   };
+  // ▲▲▲ [수정됨] ▲▲▲
 
   const handleExport = () => {
     if (allSessions.length === 0) { showToast(CONSTANTS.MESSAGES.NO_SESSIONS_TO_EXPORT); return; }
@@ -707,19 +732,18 @@ document.addEventListener('DOMContentLoaded', () => {
         importFileInput.value = '';
       }
     };
-    reader.readAsText(file);
+    reader.readText(file);
   };
 
-  const handleSessionAction = async (e) => {
+  const handleSessionAction = (e) => {
     const btn = e.target.closest('.beos-icon-button');
-    if (!btn || btn.disabled) return;
+    if (!btn) return;
     const sessionItem = btn.closest('.session-item');
     if (!sessionItem) return;
     const sessionId = sessionItem.dataset.sessionId;
 
-    btn.disabled = true;
-    document.body.style.cursor = 'wait';
-    try {
+    const allActionButtons = sessionItem.querySelectorAll('.beos-icon-button');
+    withLoadingState(allActionButtons, async () => {
       switch (btn.dataset.action) {
         case CONSTANTS.ACTIONS.RESTORE: await handleRestoreSession(sessionId); break;
         case CONSTANTS.ACTIONS.COPY: await handleCopySessionUrls(sessionId); break;
@@ -728,13 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
         case CONSTANTS.ACTIONS.PIN: await handlePinSession(sessionId); break;
         case CONSTANTS.ACTIONS.DELETE: await handleDeleteSession(sessionId); break;
       }
-    } finally {
-      const stillExistsBtn = document.querySelector(`.session-item[data-session-id="${sessionId}"] [data-action="${btn.dataset.action}"]`);
-      if (stillExistsBtn) {
-        stillExistsBtn.disabled = false;
-      }
-      document.body.style.cursor = 'default';
-    }
+    });
   };
 
   const handleOptionChange = async (e) => {
@@ -748,10 +766,13 @@ document.addEventListener('DOMContentLoaded', () => {
     buttonGroup.querySelector('.active')?.classList.remove('active');
     btn.classList.add('active');
     
-    if (key === CONSTANTS.STORAGE_KEYS.DELAY) {
-        selectedDelay = parsedValue;
-    } else if (key === CONSTANTS.STORAGE_KEYS.RESTORE_TARGET) {
-        selectedRestoreTarget = parsedValue;
+    const stateUpdateMap = {
+      [CONSTANTS.STORAGE_KEYS.DELAY]: (val) => { selectedDelay = val; },
+      [CONSTANTS.STORAGE_KEYS.RESTORE_TARGET]: (val) => { selectedRestoreTarget = val; }
+    };
+
+    if (stateUpdateMap[key]) {
+      stateUpdateMap[key](parsedValue);
     }
 
     try {
@@ -764,8 +785,13 @@ document.addEventListener('DOMContentLoaded', () => {
   const cleanup = () => {
     if (toastTimeout) clearTimeout(toastTimeout);
     if (inputDebounce) clearTimeout(inputDebounce);
-    // --- 버그 수정: 팝업이 닫힐 때 '실행 취소' 상태 초기화 ---
-    lastDeletedSession = null;
+  };
+
+  const setActiveOptionButton = (groupSelector, value) => {
+    document.querySelectorAll(`${groupSelector} .option-btn`).forEach(b => {
+      const isActive = String(b.dataset.value) === String(value);
+      b.classList.toggle('active', isActive);
+    });
   };
 
   // --- 초기화 및 이벤트 리스너 ---
@@ -782,22 +808,13 @@ document.addEventListener('DOMContentLoaded', () => {
     selectedRestoreTarget = restoreTarget;
     allSessions = sessions;
     
-    document.querySelectorAll('.delay-btn-group .option-btn').forEach(b => b.classList.toggle('active', parseInt(b.dataset.value, 10) === selectedDelay));
-    document.querySelectorAll('.restore-target-btn-group .option-btn').forEach(b => b.classList.toggle('active', b.dataset.value === selectedRestoreTarget));
+    setActiveOptionButton('.delay-btn-group', selectedDelay);
+    setActiveOptionButton('.restore-target-btn-group', selectedRestoreTarget);
 
     renderSessions();
     
-    saveBtn.addEventListener('click', async () => {
-        if (saveBtn.disabled) return;
-        saveBtn.disabled = true;
-        document.body.style.cursor = 'wait';
-        try {
-            await handleSaveSession();
-        } finally {
-            saveBtn.disabled = false;
-            document.body.style.cursor = 'default';
-        }
-    });
+    saveBtn.addEventListener('click', () => withLoadingState(saveBtn, handleSaveSession));
+
     saveCurrentBtn.addEventListener('click', (e) => { e.preventDefault(); saveBtn.click(); });
     sessionInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
     
