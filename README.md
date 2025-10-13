@@ -1,6 +1,6 @@
 # TabHaiku
 
-![TabHiaku](https://raw.githubusercontent.com/lunamoth/TabHaiku/refs/heads/main/251001_TabHaiku_7.14_Screenshot.png)
+![TabHiaku](https://raw.githubusercontent.com/lunamoth/TabHaiku/refs/heads/main/251013_TabHaiku_8.0_Screenshot.png)
 
 ## 개발 과정
 
