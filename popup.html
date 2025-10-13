@@ -337,9 +337,9 @@
     <div class="menu-item">
       <span>세션</span>
       <div class="dropdown-content">
-        <a href="#" id="save-current-btn">
+        <a href="#" id="save-all-windows-menu-btn">
           <span class="beos-emoji-icon">💾</span>
-          현재 탭 저장...
+          모든 창 저장...
         </a>
         <hr>
         <a href="#" id="import-btn">
@@ -378,10 +378,14 @@
   
   <div class="container">
     <div class="controls-bar">
-      <input type="text" id="session-input" class="beos-input" placeholder="이름을 정해서 새 세션 저장 또는 검색 " maxlength="200">
-      <button id="save-session-btn" class="beos-button">
+      <input type="text" id="session-input" class="beos-input" placeholder="새 세션 이름/세션 검색" maxlength="200">
+      <button id="save-current-window-btn" class="beos-button" title="현재 창의 모든 탭을 저장합니다.">
         <span class="beos-emoji-icon">💾</span>
-        저장
+        현재창(엔터)
+      </button>
+      <button id="save-all-windows-btn" class="beos-button" title="모든 창의 모든 탭을 저장합니다.">
+        <span class="beos-emoji-icon">💾</span>
+        전체창
       </button>
     </div>
     

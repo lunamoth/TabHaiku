@@ -29,6 +29,12 @@ document.addEventListener('DOMContentLoaded', () => {
       PIN: 'pin',
       DELETE: 'delete'
     },
+    // ▼▼▼ [추가됨] 저장 범위 상수 ▼▼▼
+    SAVE_SCOPES: {
+      CURRENT_WINDOW: 'current',
+      ALL_WINDOWS: 'all'
+    },
+    // ▲▲▲ [추가됨] ▲▲▲
     RESTORE_TARGETS: {
       NEW_WINDOW: 'new-window',
       CURRENT_WINDOW: 'current-window'
@@ -67,7 +73,9 @@ document.addEventListener('DOMContentLoaded', () => {
       createSessionSavedMessage: (name) => `💾 '${escapeHtml(name)}' 세션을 저장했습니다.`,
       createSessionRestoreStartedMessage: (name, delay) => `🚀 '${escapeHtml(name)}' 복원 중...${delay > 0 ? ` (${delay}초 지연)` : ''}`,
       createSessionRestoreCompletedMessage: (name) => `✅ '${escapeHtml(name)}' 복원 완료!`,
-      createConfirmUpdateMessage: (name) => `'${escapeHtml(name)}' 세션을 현재 모든 탭으로 덮어씁니까?`,
+      // ▼▼▼ [수정됨] 덮어쓰기 확인 메시지를 더 명확하게 변경 ▼▼▼
+      createConfirmUpdateMessage: (name) => `'${escapeHtml(name)}' 세션을 현재 열린 모든 창의 탭으로 덮어씁니까?`,
+      // ▲▲▲ [수정됨] ▲▲▲
       createNameTooLongMessage: (max) => `⚠️ 이름은 ${max}자를 초과할 수 없습니다.`,
       createNameAlreadyExistsMessage: (name) => `⚠️ '${escapeHtml(name)}' 이름이 이미 존재합니다.`,
       createNameChangedMessage: (name) => `✅ 이름이 '${escapeHtml(name)}'(으)로 변경되었습니다.`,
@@ -77,13 +85,16 @@ document.addEventListener('DOMContentLoaded', () => {
   
   // --- DOM 요소 ---
   const sessionInput = document.getElementById('session-input');
-  const saveBtn = document.getElementById('save-session-btn');
+  // ▼▼▼ [수정됨] 저장 버튼 요소 변경 ▼▼▼
+  const saveCurrentWindowBtn = document.getElementById('save-current-window-btn');
+  const saveAllWindowsBtn = document.getElementById('save-all-windows-btn');
+  const saveAllWindowsMenuBtn = document.getElementById('save-all-windows-menu-btn');
+  // ▲▲▲ [수정됨] ▲▲▲
   const sessionListEl = document.getElementById('session-list');
   const toastEl = document.getElementById('toast');
   const sessionItemTemplate = document.getElementById('session-item-template');
 
   // 메뉴바 요소
-  const saveCurrentBtn = document.getElementById('save-current-btn');
   const importBtn = document.getElementById('import-btn');
   const importFileInput = document.getElementById('import-file-input');
   const exportBtn = document.getElementById('export-btn');
@@ -342,10 +353,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
 
-  const getTabsToSave = async () => {
+  // ▼▼▼ [수정됨] 저장 범위를 인자로 받도록 getTabsToSave 함수 수정 ▼▼▼
+  const getTabsToSave = async (scope) => {
     try {
-      const tabs = await chrome.tabs.query({});
+      const queryInfo = scope === CONSTANTS.SAVE_SCOPES.CURRENT_WINDOW
+        ? { currentWindow: true }
+        : {}; // 모든 창
+
+      const tabs = await chrome.tabs.query(queryInfo);
       if (tabs.length === 0) return [];
+
       const windows = await chrome.windows.getAll();
       
       let allTabGroups = [];
@@ -369,6 +386,7 @@ document.addEventListener('DOMContentLoaded', () => {
       return [];
     }
   };
+  // ▲▲▲ [수정됨] ▲▲▲
   
   const generateUniqueSessionName = (baseName) => {
     if (!isDuplicateSessionName(baseName)) return baseName;
@@ -378,8 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return newName;
   };
 
-  const handleSaveSession = async (overwriteId = null, overwriteName = null) => {
-    const tabs = await getTabsToSave();
+  // ▼▼▼ [수정됨] 저장 범위를 인자로 받도록 handleSaveSession 함수 수정 ▼▼▼
+  const handleSaveSession = async (scope, overwriteId = null, overwriteName = null) => {
+    const tabs = await getTabsToSave(scope);
     if (tabs.length === 0) {
       showToast(CONSTANTS.MESSAGES.NO_VALID_TABS_TO_SAVE);
       return;
@@ -410,6 +429,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     );
   };
+  // ▲▲▲ [수정됨] ▲▲▲
 
   const createTabsSequentiallyWithDelay = async (windowId, tabsData, delayMs = 0) => {
     const results = [];
@@ -520,6 +540,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   };
   
+  // ▼▼▼ [수정됨] handleUpdateSession에서 모든 창을 저장하도록 명시 ▼▼▼
   const handleUpdateSession = async (sessionId) => {
     const session = findSessionById(sessionId);
     if (!session) return;
@@ -527,8 +548,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!confirm(CONSTANTS.MESSAGES.createConfirmUpdateMessage(session.name))) {
       return;
     }
-    await handleSaveSession(sessionId, session.name);
+    // 덮어쓰기는 항상 모든 창의 탭을 기준으로 동작
+    await handleSaveSession(CONSTANTS.SAVE_SCOPES.ALL_WINDOWS, sessionId, session.name);
   };
+  // ▲▲▲ [수정됨] ▲▲▲
 
   const handleDeleteSession = async (sessionId) => {
     const sessionIndex = findSessionIndexById(sessionId);
@@ -816,10 +839,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
     renderSessions();
     
-    saveBtn.addEventListener('click', () => withLoadingState(saveBtn, handleSaveSession));
+    // ▼▼▼ [수정됨] 저장 버튼 이벤트 리스너 변경 ▼▼▼
+    saveCurrentWindowBtn.addEventListener('click', () => {
+      withLoadingState(saveCurrentWindowBtn, () => handleSaveSession(CONSTANTS.SAVE_SCOPES.CURRENT_WINDOW));
+    });
 
-    saveCurrentBtn.addEventListener('click', (e) => { e.preventDefault(); saveBtn.click(); });
-    sessionInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); saveBtn.click(); } });
+    const saveAllWindowsAction = () => {
+        withLoadingState([saveAllWindowsBtn, saveAllWindowsMenuBtn], () => handleSaveSession(CONSTANTS.SAVE_SCOPES.ALL_WINDOWS));
+    };
+
+    saveAllWindowsBtn.addEventListener('click', saveAllWindowsAction);
+    saveAllWindowsMenuBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      // 메뉴가 닫힐 시간을 주기 위해 약간의 딜레이 후 실행
+      setTimeout(saveAllWindowsAction, 100);
+    });
+
+    sessionInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        saveCurrentWindowBtn.click(); // Enter 키는 '현재 창 저장'을 트리거
+      }
+    });
+    // ▲▲▲ [수정됨] ▲▲▲
     
     sessionInput.addEventListener('input', () => {
       clearTimeout(inputDebounce);
