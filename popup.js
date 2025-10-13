@@ -858,7 +858,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionInput.addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
         e.preventDefault();
-        saveCurrentWindowBtn.click(); // Enter 키는 '현재 창 저장'을 트리거
+        saveAllWindowsBtn.click(); // Enter 키는 '전체 창 저장'을 트리거
       }
     });
     // ▲▲▲ [수정됨] ▲▲▲
