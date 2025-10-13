@@ -282,7 +282,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const dateMeta = formatDate(sessionIdNum);
     const countMeta = `탭: ${session.tabs.length}${groupCount > 0 ? `, 그룹: ${groupCount}` : ''}`;
     
-    item.querySelector('.session-name').textContent = session.name;
+    // ▼▼▼ [수정됨] 긴 세션 이름에 마우스를 올리면 전체 이름이 보이도록 title 속성 추가 ▼▼▼
+    const sessionNameEl = item.querySelector('.session-name');
+    sessionNameEl.textContent = session.name;
+    sessionNameEl.title = session.name;
+    // ▲▲▲ [수정됨] ▲▲▲
+    
     item.querySelector('.session-meta-date').textContent = dateMeta;
     item.querySelector('.session-meta-count').textContent = countMeta;
     
