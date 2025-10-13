@@ -1,6 +1,6 @@
 # TabHaiku
 
-![TabHiaku](https://raw.githubusercontent.com/lunamoth/TabHaiku/refs/heads/main/251013_TabHaiku_8.0_Screenshot.png)
+![TabHiaku](https://raw.githubusercontent.com/lunamoth/TabHaiku/refs/heads/main/251013_TabHaiku_8.1_Screenshot.png)
 
 ## 개발 과정
 
@@ -63,4 +63,4 @@ https://github.com/lunamoth/TabHaiku
 * 2025-10-02 오후 2:00 // 7.21 릴리스, 하단 토스트 알림 레이어 가로폭 확대
 * 2025-10-06 오후 7:49 // 7.34 릴리스, 버그 수정
 * 2025-10-13 오후 5:07 // 7.36 릴리스, 탭 세션 제목 길어질 경우 마우스 오버시 title 로 전체 제목 표시
-* 2025-10-13 오후 5:07 // 8.0 릴리스, 현재 창 저장 버튼 추가 (엔터 기본값은 전체 창)
+* 2025-10-13 오후 11:44 // 8.1 릴리스, 현재 창 저장 버튼 추가 (엔터 기본값은 전체 창 저장)
