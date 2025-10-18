@@ -10,6 +10,8 @@
 
 https://github.com/lunamoth/TabHaiku
 
+2025년 10월 18일 TabHaiku 는 [LunaTools](http://lunamoth.com/2319) 의 하위 기능으로 추가됐습니다. 참고 부탁드리겠습니다.
+
 ---
 
 (아래는 제미나이 2.5 프로가 소스코드를 분석해서 작성한 글입니다.)
