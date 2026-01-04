@@ -1,3 +1,6 @@
+> [!CAUTION]
+2025년 10월 18일 TabHaiku 는 [LunaTools](http://lunamoth.com/2319) 의 하위 기능으로 추가됐습니다. 참고 부탁드리겠습니다. TabHaiku는 더 이상 업데이트 되지 않습니다. 8.1 버전이 마지막이고, 8.1 버전이 LunaTools 의 사이드 패널의 두번째 패널 세션 매니저로 추가됐습니다. 향후 이쪽에서 계속 업데이트 하겠습니다. 
+
 # TabHaiku
 
 ![TabHiaku](https://raw.githubusercontent.com/lunamoth/TabHaiku/refs/heads/main/251013_TabHaiku_8.1_Screenshot.png)
@@ -9,8 +12,6 @@
 주요 기능, 설치 방법, 사용 방법은 아래 깃허브 페이지의 README.md 파일을 참고 부탁드리겠습니다.
 
 https://github.com/lunamoth/TabHaiku
-
-2025년 10월 18일 TabHaiku 는 [LunaTools](http://lunamoth.com/2319) 의 하위 기능으로 추가됐습니다. 참고 부탁드리겠습니다. TabHaiku는 더 이상 업데이트 되지 않습니다. 8.1 버전이 마지막이고, 8.1 버전이 LunaTools 의 사이드 패널의 두번째 패널 세션 매니저로 추가됐습니다. 향후 이쪽에서 계속 업데이트 하겠습니다. 
 
 ---
 
